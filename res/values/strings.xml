@@ -1,0 +1,13 @@
+<resources>
+
+    <string name="app_name">3ncoApp</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="menu_settings">Settings</string>
+    <string name="title_activity_main">3ncoApp</string>
+    <string name="generate">Generate</string>
+    <string name="private_key">Generate and register a new account</string>
+    <string name="register">Before you can start, you have to register a unique Nickname.</string>
+    <string name="contacts">you can add new friends to your contact list. Just type your friends Nickname into the search box.</string>
+    <string name="new_version">New version available. Download it!</string>
+    
+</resources>
