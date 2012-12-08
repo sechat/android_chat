@@ -32,7 +32,6 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 
-import android.util.Base64;
 import android.util.Log;
 
 import de.zauberstuhl.encoapp.ThreadHelper;
@@ -60,19 +59,19 @@ public class Encryption {
 			Log.e(TAG, e.getMessage());
 		}
 		
-		Encryption.privateKey = base64Encode(priv.getEncoded());
-		Encryption.publicKey = base64Encode(pub.getEncoded());
+		Encryption.privateKey = th.base64Encode(priv.getEncoded());
+		Encryption.publicKey = th.base64Encode(pub.getEncoded());
 	}
 	
 	public String encrypt(String publicKey, String msg) {
 		try {
 			PublicKey pubKey = 
 			    KeyFactory.getInstance("RSA").generatePublic(
-			    		new X509EncodedKeySpec(base64Decode(publicKey)));
+			    		new X509EncodedKeySpec(th.base64Decode(publicKey)));
 			Cipher cipher = Cipher.getInstance("RSA");
 			cipher.init(Cipher.ENCRYPT_MODE, pubKey);
 			byte[] cipherData = cipher.doFinal(msg.getBytes());
-			return base64Encode(cipherData);
+			return th.base64Encode(cipherData);
 		} catch (NoSuchAlgorithmException e) {
 			Log.e(TAG, e.getMessage());
 		} catch (NoSuchPaddingException e) {
@@ -93,10 +92,10 @@ public class Encryption {
 		try {
 			PrivateKey privKey = 
 			    KeyFactory.getInstance("RSA").generatePrivate(
-			    		new PKCS8EncodedKeySpec(base64Decode(privateKey)));
+			    		new PKCS8EncodedKeySpec(th.base64Decode(privateKey)));
 			Cipher cipher = Cipher.getInstance("RSA");
 			cipher.init(Cipher.DECRYPT_MODE, privKey);
-			byte[] cipherData = cipher.doFinal(base64Decode(msg));
+			byte[] cipherData = cipher.doFinal(th.base64Decode(msg));
 			return new String(cipherData);
 		} catch (NoSuchAlgorithmException e) {
 			Log.e(TAG, e.getMessage());
@@ -112,15 +111,5 @@ public class Encryption {
 			Log.e(TAG, e.getMessage());
 		}
 		return null;
-	}
-
-	String base64Encode(byte[] input) {
-		//encoding  byte array into base 64
-		return Base64.encodeToString(input, Base64.DEFAULT).replaceAll("\\n", "");
-	}
-		
-	byte[] base64Decode(String input) {
-		//decoding byte array into base64
-		return Base64.decode(input, Base64.DEFAULT);
 	}
 }

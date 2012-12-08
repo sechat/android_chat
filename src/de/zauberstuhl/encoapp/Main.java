@@ -17,7 +17,6 @@ package de.zauberstuhl.encoapp;
  */
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.LinkedHashMap;
 
 import de.zauberstuhl.encoapp.adapter.DataBaseAdapter;
@@ -27,11 +26,8 @@ import de.zauberstuhl.encoapp.async.AddContact;
 import de.zauberstuhl.encoapp.async.GenerateAndRegister;
 import de.zauberstuhl.encoapp.async.SendMessage;
 import de.zauberstuhl.encoapp.async.services.Listener;
-import de.zauberstuhl.encoapp.async.services.Update;
 import de.zauberstuhl.encoapp.classes.User;
 import android.app.Activity;
-import android.app.AlarmManager;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -117,12 +113,6 @@ public class Main extends Activity {
     }
     
     public void initialize() {   	
-    	/**
-    	 * Start the update service and if database exists,
-    	 * then trigger also the Listener class
-    	 */
-    	startUpdateService();
-    	
         DataBaseAdapter db = new DataBaseAdapter(this);
         if (this.getBaseContext().getDatabasePath(
         		ThreadHelper.DATABASE).exists() && db.isset(0)) {
@@ -173,19 +163,6 @@ public class Main extends Activity {
         listener.putExtra("MESSENGER", messenger);
         bindService(listener, th.conn, Context.BIND_AUTO_CREATE);
         startService(listener);
-    }
-    
-    public void startUpdateService() {
-    	AlarmManager service =
-			(AlarmManager) getBaseContext().getSystemService(Context.ALARM_SERVICE);
-		Intent update = new Intent(getBaseContext(), Update.class);
-		PendingIntent pending = PendingIntent.getBroadcast(getBaseContext(), 0, update,
-				PendingIntent.FLAG_CANCEL_CURRENT);
-		Calendar cal = Calendar.getInstance();
-		cal.add(Calendar.SECOND, 0);
-		service.setInexactRepeating(AlarmManager.RTC_WAKEUP,
-				cal.getTimeInMillis(), ThreadHelper.REPEAT_TIME, pending);
-		startService(update);
     }
 
     public void addContact(View v) {

@@ -61,6 +61,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
+import android.util.Base64;
 import android.util.Log;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -150,8 +151,28 @@ public class ThreadHelper {
 			return "";
 		return nick;
 	}
+
+	public SSLSocket getConnection(DataBaseAdapter db) throws IOException, KeyManagementException, NoSuchAlgorithmException {
+		String nickName = getMd5Sum(db.getContactName(0));
+		SSLSocket socket = getConnection();
+	    BufferedReader in = new BufferedReader(new InputStreamReader(
+	    		socket.getInputStream()));
+		PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+		out.println("LOGIN("+nickName+")");
+		String input = in.readLine();
+		if (D) Log.e(TAG, "IN: "+input);
+		String token = encryption.decrypt(db.getPrivateKey(0),
+				input.substring(10, input.length()-1));
+		
+		// wtf? old crypt library ???
+		token = token.substring(token.length()-36);
+		
+		if (D) Log.e(TAG, "OUT: AUTHLOGIN("+token+")");
+		out.println("AUTHLOGIN("+token+")");
+		return socket;
+	}
 	
-	public SSLSocket getConnection() throws KeyManagementException, UnknownHostException, IOException, NoSuchAlgorithmException {
+	SSLSocket getConnection() throws KeyManagementException, NoSuchAlgorithmException, IOException {
 		SSLContext sc = SSLContext.getInstance("SSL");
 	    // Create empty HostnameVerifier
 	    HostnameVerifier hv = new HostnameVerifier() {
@@ -280,11 +301,12 @@ public class ThreadHelper {
     	Toast.makeText(context, message, length).show();
     }
     
-	public String exec(String command) {
+	public String exec(DataBaseAdapter db, String command) {
 		SSLSocket socket = null;
-
 	    try {
-            socket = getConnection();
+	    	if (db == null)
+	    		socket = getConnection();
+	    	else socket = getConnection(db);
             socket.setSoTimeout(10000); // set timeout to 10 seconds
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
             BufferedReader in = new BufferedReader(
@@ -295,9 +317,9 @@ public class ThreadHelper {
            	return in.readLine();
 	    } catch (IOException e) {
             Log.e(TAG, e.getMessage());
-	    } catch (NoSuchAlgorithmException e) {
-	    	Log.e(TAG, e.getMessage());
 		} catch (KeyManagementException e) {
+			Log.e(TAG, e.getMessage());
+		} catch (NoSuchAlgorithmException e) {
 			Log.e(TAG, e.getMessage());
 		} finally {
 			close(socket);
@@ -308,7 +330,8 @@ public class ThreadHelper {
 	public boolean sendMessage(DataBaseAdapter db, String me, String friend, String message) {
 		SSLSocket socket = null;
 	    try {
-	    	socket = getConnection();
+	    	socket = getConnection(db);
+	    		
 	    	String publicKey = db.getPublicKey(friend);
 	    	PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 
@@ -321,35 +344,30 @@ public class ThreadHelper {
             }
 	    } catch(NullPointerException e) {
 	    	Log.e(TAG, e.getMessage());
-	    	e.printStackTrace();
 	    } catch (IOException e) {
             Log.e(TAG, e.getMessage());
-            e.printStackTrace();
-	    } catch (NoSuchAlgorithmException e) {
-	    	Log.e(TAG, e.getMessage());
-	    	e.printStackTrace();
 		} catch (KeyManagementException e) {
 			Log.e(TAG, e.getMessage());
-			e.printStackTrace();
+		} catch (NoSuchAlgorithmException e) {
+			Log.e(TAG, e.getMessage());
 		} finally {
 			close(socket);
 		}
 		return false;
 	}
 	
-	public void sendPubKey(DataBaseAdapter db) {
+	public void sendPubKey(DataBaseAdapter db, String nickName, String publicKey) {
 		SSLSocket socket = null;
-		String nickName = getMd5Sum(db.getContactName(0));
-		String publicKey = db.getPublicKey(0);
-		
 	    try {
-            socket = getConnection();
+	    	if (db == null)
+	    		socket = getConnection();
+	    	else socket = getConnection(db);
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
             BufferedInputStream bis = new BufferedInputStream(
             		new ByteArrayInputStream(publicKey.getBytes()));
             OutputStream os = socket.getOutputStream();
             
-            out.println("PUBKEY("+nickName+")");
+            out.println("REGISTER("+nickName+","+publicKey+")");
             if (D) Log.e(TAG, "Sending public key...");
 	        int aByte;
 	        while ((aByte = bis.read()) != -1) os.write(aByte);
@@ -358,20 +376,20 @@ public class ThreadHelper {
 	        bis.close();
 	    } catch (IOException e) {
             Log.e(TAG, e.getMessage());
-	    } catch (NoSuchAlgorithmException e) {
-	    	Log.e(TAG, e.getMessage());
 		} catch (KeyManagementException e) {
+			Log.e(TAG, e.getMessage());
+		} catch (NoSuchAlgorithmException e) {
 			Log.e(TAG, e.getMessage());
 		} finally {
 			close(socket);
 		}
     }
 	
-	public byte[] receivePubKey(String nickName) {
+	public byte[] receivePubKey(DataBaseAdapter db, String nickName) {
 		byte[] result = null;
         SSLSocket socket = null;
 	    try {
-			socket = getConnection();
+	    	socket = getConnection(db);
 			PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 			out.println("GETKEY("+nickName+")");
 			
@@ -383,13 +401,13 @@ public class ThreadHelper {
 	        baos.close();
 	        is.close();
 	        result = baos.toByteArray();
-		} catch (KeyManagementException e) {
-			Log.e(TAG, e.getMessage());
 		} catch (UnknownHostException e) {
 			Log.e(TAG, e.getMessage());
-		} catch (NoSuchAlgorithmException e) {
-			Log.e(TAG, e.getMessage());
 		} catch (IOException e) {
+			Log.e(TAG, e.getMessage());
+		} catch (KeyManagementException e) {
+			Log.e(TAG, e.getMessage());
+		} catch (NoSuchAlgorithmException e) {
 			Log.e(TAG, e.getMessage());
 		} finally {
 			close(socket);
@@ -426,4 +444,14 @@ public class ThreadHelper {
     		messenger = null;
     	}
     };
+    
+	public String base64Encode(byte[] input) {
+		//encoding  byte array into base 64
+		return Base64.encodeToString(input, Base64.DEFAULT).replaceAll("\\n", "");
+	}
+		
+	public byte[] base64Decode(String input) {
+		//decoding byte array into base64
+		return Base64.decode(input, Base64.DEFAULT);
+	}
 }

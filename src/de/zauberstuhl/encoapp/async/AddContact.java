@@ -42,14 +42,14 @@ public class AddContact extends AsyncTask<String, String, Void> {
 		String plainFriend = params[0];
 		String me = db.getContactName(0);
 		String friend = th.getMd5Sum(plainFriend);
-		String result = th.exec("USER("+friend+")");
+		String result = th.exec(null, "USER("+friend+")");
 		
 		if (result.equalsIgnoreCase("1")) {
 			success = true;
-			byte[] pubKey = th.receivePubKey(friend);
-			if (!listener) th.exec("IAM("+me+","+friend+")");
+			byte[] pubKey = th.receivePubKey(db, friend);
+			if (!listener) th.exec(db, "IAM("+me+","+friend+")");
 			if (!db.isset(friend))
-				db.addContact(new Contact(plainFriend, null, new String(pubKey)));
+				db.addContact(new Contact(plainFriend, null, th.base64Encode(pubKey)));
 			publishProgress(plainFriend);
 		} else publishProgress("Username not found!");
 		db.close();

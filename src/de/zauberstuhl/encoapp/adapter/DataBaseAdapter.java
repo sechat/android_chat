@@ -67,7 +67,7 @@ public class DataBaseAdapter {
 		String selectQuery = "SELECT "+ThreadHelper.DB_NAME+" FROM "+ThreadHelper.DB_TABLE;
 		try {
 			Cursor cursor = db.rawQuery(selectQuery, null);
-			if (cursor.moveToPosition(1)) {
+			if (cursor.moveToPosition(1)) { // set 1 cause 0 is myself
 				do {
 					contactList.add(new User(cursor.getString(0)));
 				} while (cursor.moveToNext());

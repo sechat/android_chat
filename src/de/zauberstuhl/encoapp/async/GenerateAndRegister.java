@@ -42,7 +42,7 @@ public class GenerateAndRegister extends AsyncTask<Void, Integer, String> {
 		String md5NickName = th.getMd5Sum(nickName);
 		publishProgress(10);
 
-		String check = th.exec("USER("+md5NickName+")");
+		String check = th.exec(null, "USER("+md5NickName+")");
 		if (check == null)
 			return "Read timeout. Please try again!";
 		if (check.equalsIgnoreCase("1"))
@@ -58,7 +58,7 @@ public class GenerateAndRegister extends AsyncTask<Void, Integer, String> {
 				new String(Encryption.publicKey)));
 		publishProgress(80);
 		
-		th.sendPubKey(db);
+		th.sendPubKey(null, md5NickName, new String(Encryption.publicKey));
 		publishProgress(100);
 		db.close();
 		return null;

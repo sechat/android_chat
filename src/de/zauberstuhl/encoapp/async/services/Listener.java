@@ -90,7 +90,7 @@ public class Listener extends Service {
 				"New message!", System.currentTimeMillis());
 		
         try {
-        	socket = th.getConnection();
+        	socket = th.getConnection(db);
         	in = new BufferedReader(new InputStreamReader(
         			socket.getInputStream())
         	);
@@ -102,12 +102,13 @@ public class Listener extends Service {
         	if (th.D) Log.e(TAG, e.getMessage());
 		} catch (NoSuchAlgorithmException e) {
 			if (th.D) Log.e(TAG, e.getMessage());
-		}	
+		}
 	}
 	
 	@Override
 	public int onStartCommand(Intent i, int flags , int startId){
 		if (th.D) Log.e(TAG, "++ onStartCommand ++");
+		out.println("LISTENER()");
 		new Thread(thread).start();
 		return Service.START_STICKY;
 	}
@@ -116,14 +117,12 @@ public class Listener extends Service {
 		@Override
 		public synchronized void run() {
 			if (isCancelled()) return;
-			out.println("LOGIN("+nickName+")");
-			//th.sendPubKey(db);
-	
-			try {		
+			try {
 				while (!isCancelled()) {
 					Bundle bundle = new Bundle();
 					Message response = Message.obtain();
 					String line = in.readLine();
+					if (line == null) return;
 					if (th.D) Log.e(TAG, line);
 					
 					if (line.startsWith("MSG")) {
@@ -149,7 +148,6 @@ public class Listener extends Service {
 							sendNotification(plainFriend, "A new user added you!");
 						}
 					}
-					
 					response.setData(bundle);
 					if (outMessenger != null) outMessenger.send(response);
 				}

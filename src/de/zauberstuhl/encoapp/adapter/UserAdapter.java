@@ -86,6 +86,7 @@ public class UserAdapter extends BaseAdapter {
     			notifyDataSetChanged();
     			// switch to the message board
     			main.viewFlipper.showNext();
+    			th.updateChat(main);
     		}
         });
         text.setText(user.text);
