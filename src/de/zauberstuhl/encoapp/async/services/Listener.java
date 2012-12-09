@@ -88,27 +88,12 @@ public class Listener extends Service {
 		this.mNotificationManager = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
 		this.notifyDetails = new Notification(R.drawable.ic_launcher,
 				"New message!", System.currentTimeMillis());
-		
-        try {
-        	socket = th.getConnection(db);
-        	in = new BufferedReader(new InputStreamReader(
-        			socket.getInputStream())
-        	);
-        	out = new PrintWriter(socket.getOutputStream(), true);
-        } catch (IOException e) {
-        	if (th.D) Log.e(TAG, e.getMessage());
-        	cancel(true);
-        } catch (KeyManagementException e) {
-        	if (th.D) Log.e(TAG, e.getMessage());
-		} catch (NoSuchAlgorithmException e) {
-			if (th.D) Log.e(TAG, e.getMessage());
-		}
 	}
 	
 	@Override
 	public int onStartCommand(Intent i, int flags , int startId){
 		if (th.D) Log.e(TAG, "++ onStartCommand ++");
-		out.println("LISTENER()");
+		
 		new Thread(thread).start();
 		return Service.START_STICKY;
 	}
@@ -116,7 +101,25 @@ public class Listener extends Service {
 	private Runnable thread = new Runnable() {
 		@Override
 		public synchronized void run() {
+	        try {
+	        	socket = th.getConnection(db);
+	        	in = new BufferedReader(new InputStreamReader(
+	        			socket.getInputStream())
+	        	);
+	        	out = new PrintWriter(socket.getOutputStream(), true);
+	        } catch (IOException e) {
+	        	if (th.D) Log.e(TAG, e.getMessage());
+	        	cancel(true);
+	        } catch (KeyManagementException e) {
+	        	if (th.D) Log.e(TAG, e.getMessage());
+			} catch (NoSuchAlgorithmException e) {
+				if (th.D) Log.e(TAG, e.getMessage());
+			}
+	        
 			if (isCancelled()) return;
+			// set the listener socket
+			out.println("LISTENER()");
+			
 			try {
 				while (!isCancelled()) {
 					Bundle bundle = new Bundle();

@@ -112,7 +112,20 @@ public class Main extends Activity {
         myContacts = (ListView) findViewById(R.id.myContacts);
     }
     
-    public void initialize() {   	
+    public void initialize() {
+		/**
+		 * Check if the device has actually a network connection
+		 * if not, do not start the service and display
+		 * the error message
+		 */
+    	boolean serverAlive = th.isOnline(getBaseContext());
+    	if (!serverAlive) {
+    		infoBox.setVisibility(View.VISIBLE);
+    		infoBox.setText(Html.fromHtml(
+		    		getResources().getString(R.string.maintenance)));
+    		return;
+    	}
+    	
         DataBaseAdapter db = new DataBaseAdapter(this);
         if (this.getBaseContext().getDatabasePath(
         		ThreadHelper.DATABASE).exists() && db.isset(0)) {

@@ -56,6 +56,8 @@ import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.ServiceConnection;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -172,7 +174,7 @@ public class ThreadHelper {
 		return socket;
 	}
 	
-	SSLSocket getConnection() throws KeyManagementException, NoSuchAlgorithmException, IOException {
+	SSLSocket getConnection() throws KeyManagementException, NoSuchAlgorithmException, UnknownHostException, IOException {
 		SSLContext sc = SSLContext.getInstance("SSL");
 	    // Create empty HostnameVerifier
 	    HostnameVerifier hv = new HostnameVerifier() {
@@ -198,9 +200,8 @@ public class ThreadHelper {
 	    SSLSocketFactory factory = sc.getSocketFactory();
 	    HttpsURLConnection.setDefaultSSLSocketFactory(factory);
 	    HttpsURLConnection.setDefaultHostnameVerifier(hv);
-	    SSLSocket socket = (SSLSocket) factory.createSocket(IP, PORT);
-	    //socket.setSoTimeout(600000); // 10 minute timeout
-        return socket;
+	    
+        return (SSLSocket) factory.createSocket(IP, PORT);
 	}
 	
 	public void close(SSLSocket socket) {
@@ -453,5 +454,15 @@ public class ThreadHelper {
 	public byte[] base64Decode(String input) {
 		//decoding byte array into base64
 		return Base64.decode(input, Base64.DEFAULT);
+	}
+	
+	public boolean isOnline(Context context) {
+	    ConnectivityManager cm =
+	        (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+	    NetworkInfo netInfo = cm.getActiveNetworkInfo();
+	    if (netInfo != null && netInfo.isConnected()) {
+	        return true;
+	    }
+	    return false;
 	}
 }
