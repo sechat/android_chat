@@ -87,6 +87,7 @@ public class ThreadHelper {
 	 * Service
 	 */
 	public static final long REPEAT_TIME = 1000 * 320;
+	public static final int SOCKET_TIMEOUT = 1000 * 320;
 	
 	public final boolean D = true;
 	public final String appName = "3nc0App";
@@ -205,7 +206,9 @@ public class ThreadHelper {
 	    HttpsURLConnection.setDefaultSSLSocketFactory(factory);
 	    HttpsURLConnection.setDefaultHostnameVerifier(hv);
 	    
-        return (SSLSocket) factory.createSocket(IP, PORT);
+	    SSLSocket socket = (SSLSocket) factory.createSocket(IP, PORT);
+	    socket.setSoTimeout(SOCKET_TIMEOUT);//300000); // set timeout to 5 minutes
+        return socket;
 	}
 	
 	public void close(SSLSocket socket) {

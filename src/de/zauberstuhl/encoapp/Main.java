@@ -17,6 +17,7 @@ package de.zauberstuhl.encoapp;
  */
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.LinkedHashMap;
 
 import de.zauberstuhl.encoapp.adapter.DataBaseAdapter;
@@ -25,9 +26,11 @@ import de.zauberstuhl.encoapp.adapter.UserAdapter;
 import de.zauberstuhl.encoapp.async.AddContact;
 import de.zauberstuhl.encoapp.async.GenerateAndRegister;
 import de.zauberstuhl.encoapp.async.SendMessage;
-import de.zauberstuhl.encoapp.async.services.Listener;
+import de.zauberstuhl.encoapp.async.services.ListenerReceiver;
 import de.zauberstuhl.encoapp.classes.User;
 import android.app.Activity;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -168,11 +171,19 @@ public class Main extends Activity {
     }
     
     public void startListenerService() {
-    	Intent listener = new Intent(this, Listener.class);
+        Intent service = new Intent(getBaseContext(), ListenerReceiver.class);
         Messenger messenger = new Messenger(th.getListenerHandler(this));
-        listener.putExtra("MESSENGER", messenger);
-        bindService(listener, th.conn, Context.BIND_AUTO_CREATE);
-        startService(listener);
+        service.putExtra("MESSENGER", messenger);
+        bindService(service, th.conn, Context.BIND_AUTO_CREATE);
+        
+        AlarmManager alarmManager = (AlarmManager) getBaseContext().getSystemService(Context.ALARM_SERVICE);
+        PendingIntent pending = PendingIntent.getBroadcast(
+        		getBaseContext(), 0, service, PendingIntent.FLAG_CANCEL_CURRENT);
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.SECOND, 0);
+        // InexactRepeating allows Android to optimize the energy consumption
+        alarmManager.setInexactRepeating(
+        		AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), ThreadHelper.REPEAT_TIME, pending);
     }
 
     public void addContact(View v) {

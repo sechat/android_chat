@@ -19,11 +19,17 @@ package de.zauberstuhl.encoapp.async.services;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Bundle;
+import android.os.Messenger;
 
 public class ListenerReceiver extends BroadcastReceiver {
+	
     @Override
     public void onReceive(Context context, Intent intent) {
-        Intent service = new Intent(context, Listener.class);
+    	Intent service = new Intent(context, Listener.class);
+		Bundle extras = intent.getExtras();
+		if (extras != null)
+			service.putExtra("MESSENGER", (Messenger) extras.get("MESSENGER"));
         context.startService(service);
     }
 }
