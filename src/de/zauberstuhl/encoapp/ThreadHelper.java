@@ -34,6 +34,7 @@ import java.security.KeyManagementException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 
@@ -76,8 +77,8 @@ public class ThreadHelper {
 	private static String nickName = null;
 	private static boolean activityVisible;
 	
-	private static HashMap<String,LinkedHashMap<Integer, String>> userDiscussion =
-		new HashMap<String,LinkedHashMap<Integer, String>>();
+	private static HashMap<String,LinkedHashMap<String, String>> userDiscussion =
+		new HashMap<String,LinkedHashMap<String, String>>();
 	
 	public final String USER_ID = "10";
 	public final String MY_ID = "11";
@@ -119,19 +120,22 @@ public class ThreadHelper {
 	}
 	 
 	public void addDiscussionEntry(String user, String message, Boolean me) {
-		LinkedHashMap<Integer, String> map = ThreadHelper.userDiscussion.get(user);
-		if (map == null) map = new LinkedHashMap<Integer, String>();
+        Date date = new Date();
+        String hours = String.valueOf(date.getHours());
+        String minutes = String.valueOf(date.getMinutes());
+		LinkedHashMap<String, String> map = ThreadHelper.userDiscussion.get(user);
+		if (map == null) map = new LinkedHashMap<String, String>();
 		String identifier = String.valueOf(map.size());
-		if (me) identifier = MY_ID + identifier;
-		else identifier = USER_ID + identifier;
+		if (me) identifier = MY_ID + hours + minutes + identifier;
+		else identifier = USER_ID + hours + minutes + identifier;
 		
 		if (D) Log.e(TAG, "discussion user: "+user);
 		
-		map.put(Integer.valueOf(identifier), message);
+		map.put(identifier, message);
 		ThreadHelper.userDiscussion.put(user, map);
 	}
 	
-	public LinkedHashMap<Integer, String> getUserDiscussion(String user) {
+	public LinkedHashMap<String, String> getUserDiscussion(String user) {
 		return ThreadHelper.userDiscussion.get(user);
 	}
 	
@@ -273,9 +277,9 @@ public class ThreadHelper {
 			@Override
 			public void run() {
 				if (getActiveChatUser() == null) return;
-				LinkedHashMap<Integer, String> chatLog =
+				LinkedHashMap<String, String> chatLog =
 					getUserDiscussion(getMd5Sum(getActiveChatUser()));
-				if (chatLog == null) chatLog = new LinkedHashMap<Integer, String>();
+				if (chatLog == null) chatLog = new LinkedHashMap<String, String>();
 				
 				main.msgListItems.clear();
 				main.msgListItems.putAll(chatLog);
@@ -326,35 +330,6 @@ public class ThreadHelper {
 			close(socket);
 		}
 		return null;
-	}
-	
-	public boolean sendMessage(DataBaseAdapter db, String me, String friend, String message) {
-		SSLSocket socket = null;
-	    try {
-	    	socket = getConnection(db);
-	    		
-	    	String publicKey = db.getPublicKey(friend);
-	    	PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-
-            if (D) Log.e(TAG, "Sending message to "+friend);
-            if (D) Log.e(TAG, "PublicKey: "+publicKey);
-            message = encryption.encrypt(publicKey, message);
-            if (message != null) {
-            	out.println("MSG("+me+","+getMd5Sum(friend)+","+message+")");
-            	return true;
-            }
-	    } catch(NullPointerException e) {
-	    	Log.e(TAG, e.getMessage());
-	    } catch (IOException e) {
-            Log.e(TAG, e.getMessage());
-		} catch (KeyManagementException e) {
-			Log.e(TAG, e.getMessage());
-		} catch (NoSuchAlgorithmException e) {
-			Log.e(TAG, e.getMessage());
-		} finally {
-			close(socket);
-		}
-		return false;
 	}
 	
 	public void sendPubKey(DataBaseAdapter db, String nickName, String publicKey) {

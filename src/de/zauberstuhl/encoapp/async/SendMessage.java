@@ -16,16 +16,27 @@ package de.zauberstuhl.encoapp.async;
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+
+import javax.net.ssl.SSLSocket;
+
 import de.zauberstuhl.encoapp.Main;
 import de.zauberstuhl.encoapp.ThreadHelper;
 import de.zauberstuhl.encoapp.adapter.DataBaseAdapter;
+import de.zauberstuhl.encoapp.enc.Encryption;
 import android.os.AsyncTask;
+import android.util.Log;
 
 public class SendMessage extends AsyncTask<String, String, Void> {
 
 	private static ThreadHelper th = new ThreadHelper();
-	Main main;
+	private static Encryption encryption = new Encryption();
+	private static String TAG = th.appName+"SendMessage";
 	
+	Main main;
 	public SendMessage(Main main) {
 		this.main = main;
 	}
@@ -36,23 +47,14 @@ public class SendMessage extends AsyncTask<String, String, Void> {
 		String me = th.getMd5Sum(db.getContactName(0));
 		String plainFriend = th.getActiveChatUser();
 		final String message = data[0];		
-		if (!th.sendMessage(db, me, plainFriend, message)){
+		if (!sendMessage(db, me, plainFriend, message)){
 			onProgressUpdate("Encrypting the message failed! Retrying it ...");
 			//th.receivePubKey(th.getMd5Sum(plainFriend));
-			if (!th.sendMessage(db, me, plainFriend, message)) {
+			if (!sendMessage(db, me, plainFriend, message)) {
 				onProgressUpdate("Encryption failed again! Message was not delivered!");
 				return null;
 			}
 		}
-		
-		main.runOnUiThread(new Runnable() {
-			@Override
-			public void run() {
-				th.addDiscussionEntry(th.getMd5Sum(
-						th.getActiveChatUser()), message, true);
-				th.updateChat(main);
-			}
-		});
 		db.close();
 		return null;
 	}
@@ -66,5 +68,33 @@ public class SendMessage extends AsyncTask<String, String, Void> {
 			}
 		});
      }
+	
+	private boolean sendMessage(DataBaseAdapter db, String me, String friend, String message) {
+		SSLSocket socket = null;
+	    try {
+	    	socket = th.getConnection(db);
+	    		
+	    	String publicKey = db.getPublicKey(friend);
+	    	PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 
+            if (th.D) Log.e(TAG, "Sending message to "+friend);
+            if (th.D) Log.e(TAG, "PublicKey: "+publicKey);
+            message = encryption.encrypt(publicKey, message);
+            if (message != null) {
+            	out.println("MSG("+me+","+th.getMd5Sum(friend)+","+message+")");
+            	return true;
+            }
+	    } catch(NullPointerException e) {
+	    	Log.e(TAG, e.getMessage());
+	    } catch (IOException e) {
+            Log.e(TAG, e.getMessage());
+		} catch (KeyManagementException e) {
+			Log.e(TAG, e.getMessage());
+		} catch (NoSuchAlgorithmException e) {
+			Log.e(TAG, e.getMessage());
+		} finally {
+			th.close(socket);
+		}
+		return false;
+	}
 }

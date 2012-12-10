@@ -62,7 +62,7 @@ public class Main extends Activity {
     
     public ViewFlipper viewFlipper;
     
-    LinkedHashMap<Integer, String> msgListItems = new LinkedHashMap<Integer, String>();
+    LinkedHashMap<String, String> msgListItems = new LinkedHashMap<String, String>();
 	public ArrayList<User> listItems = new ArrayList<User>();
     public UserAdapter adapter;
     MessageAdapter msgAdapter;
@@ -113,6 +113,8 @@ public class Main extends Activity {
     }
     
     public void initialize() {
+    	Integer register = View.GONE;
+    	Integer contacts = View.GONE;
 		/**
 		 * Check if the device has actually a network connection
 		 * if not, do not start the service and display
@@ -123,39 +125,34 @@ public class Main extends Activity {
     		infoBox.setVisibility(View.VISIBLE);
     		infoBox.setText(Html.fromHtml(
 		    		getResources().getString(R.string.maintenance)));
-    		return;
+    	} else {
+    		DataBaseAdapter db = new DataBaseAdapter(this);
+    		if (this.getBaseContext().getDatabasePath(
+            		ThreadHelper.DATABASE).exists() && db.isset(0)) {
+    			contacts = View.VISIBLE;
+    			th.setNickName(db.getContactName(0));
+    			setTitle("Welcome "+th.getNickName());
+    			listItems = db.getAllContacts();
+    	        adapter = new UserAdapter(this, listItems);
+    	    	myContacts.setAdapter(adapter);
+    	    	infoBox.setVisibility(View.GONE);
+    			startListenerService();
+    		} else {
+    			register = View.VISIBLE;
+    			db.createDatabase();
+    			infoBox.setVisibility(View.VISIBLE);
+    			infoBox.setText(Html.fromHtml(
+    		    		getResources().getString(R.string.register)));
+    		}
+    		db.close();
     	}
+    	genNickname.setVisibility(register);
+    	genButton.setVisibility(register);
+    	genBar.setVisibility(register);
     	
-        DataBaseAdapter db = new DataBaseAdapter(this);
-        if (this.getBaseContext().getDatabasePath(
-        		ThreadHelper.DATABASE).exists() && db.isset(0)) {
-        	th.setNickName(db.getContactName(0));
-        	setTitle("Welcome "+th.getNickName());
-    		genNickname.setVisibility(View.GONE);
-		    genButton.setVisibility(View.GONE);
-		    genBar.setVisibility(View.GONE);
-		    infoBox.setVisibility(View.GONE);
-		    myContacts.setVisibility(View.VISIBLE);
-		    addContactButton.setVisibility(View.VISIBLE);
-		    addContactText.setVisibility(View.VISIBLE);
-		    
-		    listItems = db.getAllContacts();
-	        adapter = new UserAdapter(this, listItems);
-	    	myContacts.setAdapter(adapter);
-	    	startListenerService();
-        } else {
-        	db.createDatabase();
-        	genNickname.setVisibility(View.VISIBLE);
-		    genButton.setVisibility(View.VISIBLE);
-		    genBar.setVisibility(View.VISIBLE);
-		    infoBox.setVisibility(View.VISIBLE);
-		    myContacts.setVisibility(View.GONE);
-		    addContactButton.setVisibility(View.GONE);
-		    addContactText.setVisibility(View.GONE);
-		    infoBox.setText(Html.fromHtml(
-		    		getResources().getString(R.string.register)));
-        }
-    	db.close();
+    	myContacts.setVisibility(contacts);
+    	addContactButton.setVisibility(contacts);
+    	addContactText.setVisibility(contacts);
     }
     
     @Override
@@ -205,8 +202,11 @@ public class Main extends Activity {
     public void send(View v) {
         final String msg = msgTextField.getText().toString();
         msgTextField.setText("");
-        if (msg.length() > 0)
+        if (msg.length() > 0) {
+        	th.addDiscussionEntry(th.getMd5Sum(
+					th.getActiveChatUser()), msg, true);
+			th.updateChat(this);
         	new SendMessage(this).execute(msg);
-        else th.sendNotification(this, "Need message to send!");
+        } else th.sendNotification(this, "Need message to send!");
     }
 }

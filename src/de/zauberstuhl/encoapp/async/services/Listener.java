@@ -126,7 +126,7 @@ public class Listener extends Service {
 					Message response = Message.obtain();
 					String line = in.readLine();
 					if (line == null) return;
-					if (th.D) Log.e(TAG, line);
+					if (th.D) Log.e(TAG, "DEBUG: "+line);
 					
 					if (line.startsWith("MSG")) {
 						String[] data = line.substring(4, line.length()-1).split(",");

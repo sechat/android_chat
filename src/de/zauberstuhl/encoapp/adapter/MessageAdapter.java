@@ -16,7 +16,6 @@ package de.zauberstuhl.encoapp.adapter;
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import java.util.Date;
 import java.util.LinkedHashMap;
 import de.zauberstuhl.encoapp.R;
 import de.zauberstuhl.encoapp.ThreadHelper;
@@ -37,10 +36,10 @@ public class MessageAdapter extends BaseAdapter {
 	private static ThreadHelper th = new ThreadHelper();
 
 	private Activity activity;
-    private LinkedHashMap<Integer, String> data;
+    private LinkedHashMap<String, String> data;
     private static LayoutInflater inflater = null;
     
-    public MessageAdapter(Activity activity, LinkedHashMap<Integer, String> data) {
+    public MessageAdapter(Activity activity, LinkedHashMap<String, String> data) {
     	this.activity = activity;
         this.data = data;
         inflater = (LayoutInflater)activity.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -63,10 +62,9 @@ public class MessageAdapter extends BaseAdapter {
 
     public View getView(int position, View convertView, ViewGroup parent) {
         View vi=convertView;
-        Date date = new Date();
-        String hours = String.valueOf(date.getHours());
-        String minutes = String.valueOf(date.getMinutes());
-        Integer identifier = (Integer) data.keySet().toArray()[position];
+        String identifier = (String) data.keySet().toArray()[position];
+        String hours = identifier.substring(2, 4);
+        String minutes = identifier.substring(4, 6);
         final String msg = (String) data.values().toArray()[position];
         
         if (String.valueOf(identifier).startsWith(th.MY_ID))
