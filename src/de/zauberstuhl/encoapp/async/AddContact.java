@@ -44,7 +44,7 @@ public class AddContact extends AsyncTask<String, String, Void> {
 		String friend = th.getMd5Sum(plainFriend);
 		String result = th.exec(null, "USER("+friend+")");
 		
-		if (result.equalsIgnoreCase("1")) {
+		if (result != null && result.equalsIgnoreCase("1")) {
 			success = true;
 			byte[] pubKey = th.receivePubKey(db, friend);
 			if (!listener) th.exec(db, "IAM("+me+","+friend+")");
