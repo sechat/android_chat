@@ -17,20 +17,18 @@ package de.zauberstuhl.encoapp;
  */
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.LinkedHashMap;
 
+import org.jivesoftware.smack.Chat;
+import org.jivesoftware.smack.ChatManager;
+import org.jivesoftware.smack.XMPPException;
 import de.zauberstuhl.encoapp.adapter.DataBaseAdapter;
 import de.zauberstuhl.encoapp.adapter.MessageAdapter;
 import de.zauberstuhl.encoapp.adapter.UserAdapter;
-import de.zauberstuhl.encoapp.async.AddContact;
-import de.zauberstuhl.encoapp.async.GenerateAndRegister;
-import de.zauberstuhl.encoapp.async.SendMessage;
-import de.zauberstuhl.encoapp.async.services.ListenerReceiver;
 import de.zauberstuhl.encoapp.classes.User;
+import de.zauberstuhl.encoapp.enc.Encryption;
+import de.zauberstuhl.encoapp.services.Listener;
 import android.app.Activity;
-import android.app.AlarmManager;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -69,7 +67,7 @@ public class Main extends Activity {
 	public ArrayList<User> listItems = new ArrayList<User>();
     public UserAdapter adapter;
     MessageAdapter msgAdapter;
-
+    
     @Override
     public synchronized void onResume() {
         super.onResume();
@@ -116,8 +114,6 @@ public class Main extends Activity {
     }
     
     public void initialize() {
-    	Integer register = View.GONE;
-    	Integer contacts = View.GONE;
 		/**
 		 * Check if the device has actually a network connection
 		 * if not, do not start the service and display
@@ -128,35 +124,56 @@ public class Main extends Activity {
     		infoBox.setVisibility(View.VISIBLE);
     		infoBox.setText(Html.fromHtml(
 		    		getResources().getString(R.string.maintenance)));
-    	} else {
-    		DataBaseAdapter db = new DataBaseAdapter(this);
-    		if (this.getBaseContext().getDatabasePath(
-            		ThreadHelper.DATABASE).exists() && db.isset(0)) {
-    			contacts = View.VISIBLE;
-    			th.setNickName(db.getContactName(0));
-    			setTitle("Welcome "+th.getNickName());
-    			listItems = db.getAllContacts();
-    	        adapter = new UserAdapter(this, listItems);
-    	    	myContacts.setAdapter(adapter);
-    	    	infoBox.setVisibility(View.GONE);
-    			startListenerService();
-    		} else {
-    			register = View.VISIBLE;
-    			db.createDatabase();
-    			infoBox.setVisibility(View.VISIBLE);
-    			infoBox.setText(Html.fromHtml(
-    		    		getResources().getString(R.string.register)));
-    		}
-    		db.close();
+    		return;
     	}
-    	genNickname.setVisibility(register);
-    	genButton.setVisibility(register);
-    	genBar.setVisibility(register);
-    	
-    	myContacts.setVisibility(contacts);
-    	addContactButton.setVisibility(contacts);
-    	addContactText.setVisibility(contacts);
+    	/**
+    	 * Start service listener
+    	 */
+    	Intent service = new Intent(getBaseContext(), Listener.class);
+    	Messenger messenger = new Messenger(th.getListenerHandler(this));
+        service.putExtra("MESSENGER", messenger);
+        bindService(service, th.conn, Context.BIND_AUTO_CREATE);
+    	getBaseContext().startService(service);
+    	    	
+    	DataBaseAdapter db = new DataBaseAdapter(this);
+    	if (this.getBaseContext().getDatabasePath(
+    			ThreadHelper.DATABASE).exists() && db.isset(0)) {
+    		String user = db.getContactName(0);
+    		th.setNickName(user);
+    		ThreadHelper.ACCOUNT_NAME = user;
+    		ThreadHelper.ACCOUNT_PASSWORD = db.getContactPassword();
+    		setTitle("Welcome "+th.getNickName());
+    		
+    		listItems = db.getAllContacts();
+    		adapter = new UserAdapter(this, listItems);
+    		myContacts.setAdapter(adapter);
+    		
+    		infoBox.setVisibility(View.GONE);
+    		myContacts.setVisibility(View.VISIBLE);
+        	addContactButton.setVisibility(View.VISIBLE);
+        	addContactText.setVisibility(View.VISIBLE);
+        	genNickname.setVisibility(View.GONE);
+        	genButton.setVisibility(View.GONE);
+        	genBar.setVisibility(View.GONE);
+    	} else register();
+    	db.close();
     }
+    
+    public void register() {
+		infoBox.setVisibility(View.VISIBLE);
+    	if (Encryption.privateKey == null) {
+    		infoBox.setText(Html.fromHtml(
+    	    		getResources().getString(R.string.stepone)));
+    		genNickname.setVisibility(View.GONE);
+    	} else {
+    		infoBox.setText(Html.fromHtml(
+    	    		getResources().getString(R.string.steptwo)));
+    		genNickname.setVisibility(View.VISIBLE);
+    	}
+    	genButton.setVisibility(View.VISIBLE);
+    	genBar.setVisibility(View.VISIBLE);
+    }
+    
     
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
@@ -169,30 +186,14 @@ public class Main extends Activity {
         }
         return super.onKeyDown(keyCode, event);
     }
-    
-    public void startListenerService() {
-        Intent service = new Intent(getBaseContext(), ListenerReceiver.class);
-        Messenger messenger = new Messenger(th.getListenerHandler(this));
-        service.putExtra("MESSENGER", messenger);
-        bindService(service, th.conn, Context.BIND_AUTO_CREATE);
-        
-        AlarmManager alarmManager = (AlarmManager) getBaseContext().getSystemService(Context.ALARM_SERVICE);
-        PendingIntent pending = PendingIntent.getBroadcast(
-        		getBaseContext(), 0, service, PendingIntent.FLAG_CANCEL_CURRENT);
-        Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.SECOND, 0);
-        // InexactRepeating allows Android to optimize the energy consumption
-        alarmManager.setInexactRepeating(
-        		AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), ThreadHelper.REPEAT_TIME, pending);
-    }
 
     public void addContact(View v) {
-    	final String plainFriend = addContactText.getText().toString().trim();
+    	final String friend = addContactText.getText().toString().trim();
     	addContactButton.setEnabled(false);
     	addContactText.setEnabled(false);
-    	if (plainFriend.length() > 0)
-    		new AddContact(this, false).execute(plainFriend);
-    	else {
+    	if (friend.length() > 0) {
+    		new AddContact(this, ThreadHelper.xmppConnection).execute(friend);
+    	} else {
     		th.sendNotification(this, "Please type a Nickname into the textfield!");
     		addContactButton.setEnabled(true);
     		addContactText.setEnabled(true);
@@ -202,22 +203,33 @@ public class Main extends Activity {
     public void generate(View v) {
     	String input = genNickname.getText().toString().trim();
     	genButton.setEnabled(false);
-    	if (input.length() > 0)
-    		new GenerateAndRegister(this, input).execute();
-    	else {
-    		th.sendNotification(this, "Need Nickname for registration!");
-            genButton.setEnabled(true);
-    	}
+    	new Register(this, input).execute();
     }
 
     public void send(View v) {
         final String msg = msgTextField.getText().toString();
         msgTextField.setText("");
         if (msg.length() > 0) {
-        	th.addDiscussionEntry(th.getMd5Sum(
-					th.getActiveChatUser()), msg, true);
-			th.updateChat(this);
-        	new SendMessage(this).execute(msg);
+        	if (ThreadHelper.xmppConnection != null ||
+        			ThreadHelper.xmppConnection.isAuthenticated()) {
+        		String user = th.getActiveChatUser();
+        		ChatManager chatmanager = ThreadHelper.xmppConnection.getChatManager();
+        		Chat newChat = chatmanager.createChat(user, null);
+        		try {
+        			newChat.sendMessage(msg);
+        			th.addDiscussionEntry(user, msg, true);
+	    			th.updateChat(this);
+        		} catch (XMPPException e) {
+        			msgTextField.setText(msg);
+        			th.sendNotification(this, "Sending failed!");
+        		}
+        	} else th.sendNotification(this, "You are not connected!");
         } else th.sendNotification(this, "Need message to send!");
+        
+        DataBaseAdapter db = new DataBaseAdapter(this);
+        th.sendPublicKey(
+				ThreadHelper.xmppConnection, 
+				db, "lukas@connect.3nc0.de");
+        db.close();
     }
 }

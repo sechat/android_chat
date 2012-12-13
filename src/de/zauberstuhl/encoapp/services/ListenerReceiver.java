@@ -1,4 +1,4 @@
-package de.zauberstuhl.encoapp.async.services;
+package de.zauberstuhl.encoapp.services;
 
 /**
  * Copyright (C) 2012 Lukas Matt <lukas@zauberstuhl.de>

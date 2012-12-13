@@ -68,7 +68,7 @@ public class DataBaseHelper extends SQLiteOpenHelper {
     	db.execSQL("CREATE TABLE "+ThreadHelper.DB_TABLE+" ("+
     			ThreadHelper.DB_ID+" INTEGER PRIMARY KEY, "+
     			ThreadHelper.DB_NAME+" TEXT, "+
-    			ThreadHelper.DB_MD5+" TEXT, "+
+    			ThreadHelper.DB_PASSWORD+" TEXT, "+
     			ThreadHelper.DB_PRIVATE+" TEXT, "+
     			ThreadHelper.DB_PUBLIC+" TEXT)");
 	}

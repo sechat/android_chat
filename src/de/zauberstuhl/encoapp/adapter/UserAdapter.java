@@ -24,6 +24,7 @@ import de.zauberstuhl.encoapp.ThreadHelper;
 import de.zauberstuhl.encoapp.classes.User;
 import android.content.Context;
 import android.graphics.Typeface;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -35,6 +36,7 @@ import android.widget.TextView;
 public class UserAdapter extends BaseAdapter {
 
 	private static ThreadHelper th = new ThreadHelper();
+	private String TAG = th.appName+getClass().getName();
 	
 	private Main main;
     private ArrayList<User> data;
@@ -78,10 +80,11 @@ public class UserAdapter extends BaseAdapter {
         	@Override
     		public void onClick(View arg0) {
     			String keyName = user.text;
+    			if (th.D) Log.e(TAG, "Switch to user chat: "+keyName);
+    			
     			// set window title
     			main.setTitle(keyName);
     			th.setActiveChatUser(keyName);
-    			// set contact to normal size
     			th.updateListViewEntry(keyName, Typeface.NORMAL, data);
     			notifyDataSetChanged();
     			// switch to the message board

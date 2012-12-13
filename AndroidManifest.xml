@@ -32,8 +32,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <service android:name=".async.services.Listener"></service>
-        <receiver android:name=".async.services.ListenerReceiver">
+        <service android:name=".services.Listener"></service>
+        <receiver android:name=".services.ListenerReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>

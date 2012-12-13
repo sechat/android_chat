@@ -16,21 +16,10 @@ package de.zauberstuhl.encoapp;
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.net.UnknownHostException;
-import java.security.KeyManagementException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -38,20 +27,40 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.SSLSocket;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
+import org.jivesoftware.smack.XMPPConnection;
+import org.jivesoftware.smack.provider.PrivacyProvider;
+import org.jivesoftware.smack.provider.ProviderManager;
+import org.jivesoftware.smackx.GroupChatInvitation;
+import org.jivesoftware.smackx.PrivateDataManager;
+import org.jivesoftware.smackx.ServiceDiscoveryManager;
+import org.jivesoftware.smackx.filetransfer.FileTransferManager;
+import org.jivesoftware.smackx.filetransfer.OutgoingFileTransfer;
+import org.jivesoftware.smackx.packet.ChatStateExtension;
+import org.jivesoftware.smackx.packet.LastActivity;
+import org.jivesoftware.smackx.packet.OfflineMessageInfo;
+import org.jivesoftware.smackx.packet.OfflineMessageRequest;
+import org.jivesoftware.smackx.packet.SharedGroupsInfo;
+import org.jivesoftware.smackx.provider.AdHocCommandDataProvider;
+import org.jivesoftware.smackx.provider.BytestreamsProvider;
+import org.jivesoftware.smackx.provider.DataFormProvider;
+import org.jivesoftware.smackx.provider.DelayInformationProvider;
+import org.jivesoftware.smackx.provider.DiscoverInfoProvider;
+import org.jivesoftware.smackx.provider.DiscoverItemsProvider;
+import org.jivesoftware.smackx.provider.MUCAdminProvider;
+import org.jivesoftware.smackx.provider.MUCOwnerProvider;
+import org.jivesoftware.smackx.provider.MUCUserProvider;
+import org.jivesoftware.smackx.provider.MessageEventProvider;
+import org.jivesoftware.smackx.provider.MultipleAddressesProvider;
+import org.jivesoftware.smackx.provider.RosterExchangeProvider;
+import org.jivesoftware.smackx.provider.StreamInitiationProvider;
+import org.jivesoftware.smackx.provider.VCardProvider;
+import org.jivesoftware.smackx.provider.XHTMLExtensionProvider;
+import org.jivesoftware.smackx.search.UserSearch;
 
 import de.zauberstuhl.encoapp.adapter.DataBaseAdapter;
-import de.zauberstuhl.encoapp.async.AddContact;
-import de.zauberstuhl.encoapp.async.services.Listener;
 import de.zauberstuhl.encoapp.classes.User;
 import de.zauberstuhl.encoapp.enc.Encryption;
+import de.zauberstuhl.encoapp.services.Listener;
 
 import android.app.Activity;
 import android.content.ComponentName;
@@ -73,6 +82,21 @@ public class ThreadHelper {
 	
 	private static Encryption encryption = new Encryption();
 	
+	public static XMPPConnection xmppConnection = null;
+	public static String ACCOUNT_NAME = null;
+	public static String ACCOUNT_PASSWORD = null;
+	
+	public final boolean D = true;
+	public final String appName = "3nc0App";
+	String TAG = appName+getClass().getName();
+	public final String HOST = "connect.3nc0.de";
+	public final String IP = "188.40.178.248";
+	public final int PORT = 5222;
+	
+	/**
+	 * To track the user messages
+	 * no nice but it works :S
+	 */
 	private static String activeChatUser = null;
 	private static String nickName = null;
 	private static boolean activityVisible;
@@ -84,42 +108,56 @@ public class ThreadHelper {
 	public final String MY_ID = "11";
 	
 	/**
-	 * Service
-	 */
-	public static final long REPEAT_TIME = 1000 * 320;
-	public static final int SOCKET_TIMEOUT = 1000 * 320;
-	
-	public final boolean D = true;
-	public final String appName = "3nc0App";
-	public final String TAG = appName+"ThreadHelper";
-	public final String HOST = "www.3nc0.de";
-	public final String IP = "188.40.178.248";
-	public final int PORT = 9001;
-	
-	/**
 	 * Database params
 	 */
-	public final static int DATABASE_VERSION = 3;
+	public final static int DATABASE_VERSION = 6;
 	public final static String DATABASE = "3ncoApp";
 	public final static String DB_TABLE = "userTable";
 	public final static String DB_ID = "id";
 	public final static String DB_NAME = "name";
-	public final static String DB_MD5 = "md5";
+	public final static String DB_PASSWORD = "password";
 	public final static String DB_PRIVATE = "private";
 	public final static String DB_PUBLIC = "public";
 	
-	public static boolean isActivityVisible() {
-		return activityVisible;
+	/**
+	 * Service
+	 */
+	private static boolean cancelListener = false;
+	public void cancelListener(boolean status) {
+		ThreadHelper.cancelListener = status;
+	}
+	public boolean isListenerCancelled() {
+		return ThreadHelper.cancelListener;
+	}
+	public static final int REPEAT_TIME = 1000 * 320;
+	
+	/////////////////////////////////////////////////////
+	//	Starting some public function
+	/////////////////////////////////////////////////////
+	
+	/**
+	 * Send your public key
+	 * to the user who request it
+	 */
+	public boolean sendPublicKey(XMPPConnection conn, DataBaseAdapter db, String user) {
+		if (conn.isAuthenticated()){
+			byte[] publicKey = base64Decode(db.getPublicKey(0));
+			
+			// Create the file transfer manager
+			FileTransferManager manager = new FileTransferManager(conn);
+			
+			OutgoingFileTransfer transfer =
+				manager.createOutgoingFileTransfer(user);
+			
+			transfer.sendStream(new ByteArrayInputStream(publicKey),
+					"Filename managed by Description", publicKey.length, null);
+			return true;
+		} else return false;
 	}
 	
-	public static void activityResumed() {
-		activityVisible = true;
-	}
-	
-	public static void activityPaused() {
-		activityVisible = false;
-	}
-	 
+	/**
+	 * Add a new chat message to the active chat
+	 */
 	public void addDiscussionEntry(String user, String message, Boolean me) {
         Date date = new Date();
         String hours = String.valueOf(date.getHours());
@@ -134,6 +172,18 @@ public class ThreadHelper {
 		
 		map.put(identifier, message);
 		ThreadHelper.userDiscussion.put(user, map);
+	}
+	
+	public static boolean isActivityVisible() {
+		return activityVisible;
+	}
+	
+	public static void activityResumed() {
+		activityVisible = true;
+	}
+	
+	public static void activityPaused() {
+		activityVisible = false;
 	}
 	
 	public LinkedHashMap<String, String> getUserDiscussion(String user) {
@@ -158,103 +208,42 @@ public class ThreadHelper {
 			return "";
 		return nick;
 	}
-
-	public SSLSocket getConnection(DataBaseAdapter db) throws IOException, KeyManagementException, NoSuchAlgorithmException {
-		String nickName = getMd5Sum(db.getContactName(0));
-		SSLSocket socket = getConnection();
-	    BufferedReader in = new BufferedReader(new InputStreamReader(
-	    		socket.getInputStream()));
-		PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-		out.println("LOGIN("+nickName+")");
-		String input = in.readLine();
-		if (D) Log.e(TAG, "IN: "+input);
-		String token = encryption.decrypt(db.getPrivateKey(0),
-				input.substring(10, input.length()-1));
+	
+	/**
+	 * This Handler waits for incoming messages
+	 */
+	public Handler getListenerHandler(final Main main) {
+		return new Handler() {
+			public void handleMessage(Message message) {
+	    		Bundle data = message.getData();
+	    		if (message.arg1 == Activity.RESULT_OK && data != null) {
+	    			addDiscussionEntry(
+	    					data.getString(Listener.ID),
+	    					data.getString(Listener.MESSAGE), false);
+	    			updateChat(main);
+	    		}
+	    	}};	
+	}
+	
+	public String base64Encode(byte[] input) {
+		//encoding  byte array into base 64
+		return Base64.encodeToString(input, Base64.DEFAULT).replaceAll("\\n", "");
+	}
 		
-		// wtf? old crypt library ???
-		token = token.substring(token.length()-36);
-		
-		if (D) Log.e(TAG, "OUT: AUTHLOGIN("+token+")");
-		out.println("AUTHLOGIN("+token+")");
-		return socket;
+	public byte[] base64Decode(String input) {
+		//decoding byte array into base64
+		return Base64.decode(input, Base64.DEFAULT);
 	}
 	
-	SSLSocket getConnection() throws KeyManagementException, NoSuchAlgorithmException, UnknownHostException, IOException {
-		SSLContext sc = SSLContext.getInstance("SSL");
-	    // Create empty HostnameVerifier
-	    HostnameVerifier hv = new HostnameVerifier() {
-			@Override
-			public boolean verify(String hostname, SSLSession session) {
-				return true;
-			}
-	    };
-	    // Create a trust manager that does not validate certificate chains
-	    TrustManager[] trustAllCerts = new TrustManager[]{
-	    new X509TrustManager() {
-	    	public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-	    		return null;
-	    	}
-	    	public void checkClientTrusted(
-	    			java.security.cert.X509Certificate[] certs, String authType) {}
-	    	public void checkServerTrusted(
-	    			java.security.cert.X509Certificate[] certs, String authType) {}
-	    	}
-	    };
-
-	    sc.init(null, trustAllCerts, new java.security.SecureRandom());
-	    SSLSocketFactory factory = sc.getSocketFactory();
-	    HttpsURLConnection.setDefaultSSLSocketFactory(factory);
-	    HttpsURLConnection.setDefaultHostnameVerifier(hv);
-	    
-	    SSLSocket socket = (SSLSocket) factory.createSocket(IP, PORT);
-	    socket.setSoTimeout(SOCKET_TIMEOUT);//300000); // set timeout to 5 minutes
-        return socket;
-	}
+    public void sendNotification(Context context, String message) {
+    	sendNotification(context, message, Toast.LENGTH_SHORT);
+    }
+    
+    public void sendNotification(Context context, String message, int length) {
+    	Toast.makeText(context, message, length).show();
+    }
 	
-	public void close(SSLSocket socket) {
-		try {
-			if (D) Log.e(TAG, "Close socket!");
-			socket.close();
-		} catch (IOException e) {
-			if (D) Log.e(TAG, e.getMessage());
-		}
-	}
-	
-	public void close(ObjectOutputStream oout) {
-		try {
-			if (D) Log.e(TAG, "Close socket!");
-			oout.close();
-		} catch (IOException e) {
-			if (D) Log.e(TAG, e.getMessage());
-		}
-	}
-	
-	public void close(ObjectInputStream oin) {
-		try {
-			if (D) Log.e(TAG, "Close socket!");
-			oin.close();
-		} catch (IOException e) {
-			if (D) Log.e(TAG, e.getMessage());
-		}
-	}
-	
-	public String getMd5Sum(File file)	{
-		MessageDigest messageDigest = null;
-		byte[] ba = new byte[8192];
-		try {
-			InputStream is = new FileInputStream(file);
-			messageDigest = MessageDigest.getInstance("MD5");
-			for( int n = 0; (n = is.read( ba )) > -1; ) { messageDigest.update( ba, 0, n ); }
-		} catch (IOException e) {
-			if (D) Log.e(TAG, e.getMessage());
-		} catch (NoSuchAlgorithmException e) {
-			if (D) Log.e(TAG, e.getMessage());
-		}
-		return getMd5Sum(
-				new String(messageDigest.digest()));
-	}
-	
-    public String getMd5Sum(String in) {
+	public String getMd5Sum(String in) {
 		try {
 			MessageDigest md5 = MessageDigest.getInstance("MD5");
 	        md5.reset();
@@ -275,13 +264,35 @@ public class ThreadHelper {
 		return null;
     }
 	
+	public boolean isOnline(Context context) {
+	    ConnectivityManager cm =
+	        (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+	    NetworkInfo netInfo = cm.getActiveNetworkInfo();
+	    if (netInfo != null && netInfo.isConnected()) {
+	        return true;
+	    }
+	    return false;
+	}
+	
+	public ServiceConnection conn = new ServiceConnection() {
+    	Messenger messenger = null;
+
+    	public void onServiceConnected(ComponentName className, IBinder binder) {
+    		messenger = new Messenger(binder);
+    	}
+
+    	public void onServiceDisconnected(ComponentName className) {
+    		messenger = null;
+    	}
+    };
+    
 	public void updateChat(final Main main) {
 		main.runOnUiThread(new Runnable(){
 			@Override
 			public void run() {
 				if (getActiveChatUser() == null) return;
 				LinkedHashMap<String, String> chatLog =
-					getUserDiscussion(getMd5Sum(getActiveChatUser()));
+					getUserDiscussion(getActiveChatUser());
 				if (chatLog == null) chatLog = new LinkedHashMap<String, String>();
 				
 				main.msgListItems.clear();
@@ -300,147 +311,152 @@ public class ThreadHelper {
     		}
     	}
 	}
-    
-    public void sendNotification(Context context, String message) {
-    	sendNotification(context, message, Toast.LENGTH_SHORT);
-    }
-    
-    public void sendNotification(Context context, String message, int length) {
-    	Toast.makeText(context, message, length).show();
-    }
-    
-	public String exec(DataBaseAdapter db, String command) {
-		SSLSocket socket = null;
-	    try {
-	    	if (db == null)
-	    		socket = getConnection();
-	    	else socket = getConnection(db);
-            socket.setSoTimeout(10000); // set timeout to 10 seconds
-            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-            BufferedReader in = new BufferedReader(
-            		new InputStreamReader(socket.getInputStream())
-            );
-            if (D) Log.e(TAG, "Sending command: "+command);
-            out.println(command);
-           	return in.readLine();
-	    } catch (IOException e) {
-            Log.e(TAG, e.getMessage());
-		} catch (KeyManagementException e) {
-			Log.e(TAG, e.getMessage());
-		} catch (NoSuchAlgorithmException e) {
-			Log.e(TAG, e.getMessage());
-		} finally {
-			close(socket);
-		}
-		return null;
-	}
 	
-	public void sendPubKey(DataBaseAdapter db, String nickName, String publicKey) {
-		SSLSocket socket = null;
-	    try {
-	    	if (db == null)
-	    		socket = getConnection();
-	    	else socket = getConnection(db);
-            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-            BufferedInputStream bis = new BufferedInputStream(
-            		new ByteArrayInputStream(publicKey.getBytes()));
-            OutputStream os = socket.getOutputStream();
-            
-            out.println("REGISTER("+nickName+","+publicKey+")");
-            if (D) Log.e(TAG, "Sending public key...");
-	        int aByte;
-	        while ((aByte = bis.read()) != -1) os.write(aByte);
-	        os.flush();
-	        os.close();
-	        bis.close();
-	    } catch (IOException e) {
-            Log.e(TAG, e.getMessage());
-		} catch (KeyManagementException e) {
-			Log.e(TAG, e.getMessage());
-		} catch (NoSuchAlgorithmException e) {
-			Log.e(TAG, e.getMessage());
-		} finally {
-			close(socket);
-		}
-    }
+	/** ******************************************** **/
 	
-	public byte[] receivePubKey(DataBaseAdapter db, String nickName) {
-		byte[] result = null;
-        SSLSocket socket = null;
-	    try {
-	    	socket = getConnection(db);
-			PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-			out.println("GETKEY("+nickName+")");
-			
-			int aByte;
-			InputStream is = socket.getInputStream();
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();	        
-	        while ((aByte = is.read()) != -1) baos.write(aByte);
-	        baos.flush();
-	        baos.close();
-	        is.close();
-	        result = baos.toByteArray();
-		} catch (UnknownHostException e) {
-			Log.e(TAG, e.getMessage());
+	public void close(ObjectOutputStream oout) {
+		try {
+			if (D) Log.e(TAG, "Close socket!");
+			oout.close();
 		} catch (IOException e) {
-			Log.e(TAG, e.getMessage());
-		} catch (KeyManagementException e) {
-			Log.e(TAG, e.getMessage());
-		} catch (NoSuchAlgorithmException e) {
-			Log.e(TAG, e.getMessage());
-		} finally {
-			close(socket);
+			if (D) Log.e(TAG, e.getMessage());
 		}
-		return result;
+	}
+	
+	public void close(ObjectInputStream oin) {
+		try {
+			if (D) Log.e(TAG, "Close socket!");
+			oin.close();
+		} catch (IOException e) {
+			if (D) Log.e(TAG, e.getMessage());
+		}
+	}
+
+    /**
+     * It seems it's a known issue: the smack.providers file,
+     * usually in /META-INF folder in normal versions of smack,
+     * can't be loaded in Android because its jar packaging.
+     * So all the providers must be initialized by hand,
+     * as shown in Mike Ryan's answer in this thread:
+     * http://community.igniterealtime.org/message/201866#201866
+     */
+    public void configure(ProviderManager pm) {
+        //  Private Data Storage
+        pm.addIQProvider("query","jabber:iq:private",
+        		new PrivateDataManager.PrivateDataIQProvider());
+
+        //  Time
+        try {
+            pm.addIQProvider("query","jabber:iq:time",
+            		Class.forName("org.jivesoftware.smackx.packet.Time"));
+        } catch (ClassNotFoundException e) {
+            Log.w("TestClient", "Can't load class for org.jivesoftware.smackx.packet.Time");
+        }
+
+        //  Roster Exchange
+        pm.addExtensionProvider("x","jabber:x:roster", new RosterExchangeProvider());
+
+        //  Message Events
+        pm.addExtensionProvider("x","jabber:x:event", new MessageEventProvider());
+
+        //  Chat State
+        pm.addExtensionProvider("active","http://jabber.org/protocol/chatstates",
+        		new ChatStateExtension.Provider());
+        pm.addExtensionProvider("composing","http://jabber.org/protocol/chatstates",
+        		new ChatStateExtension.Provider()); 
+        pm.addExtensionProvider("paused","http://jabber.org/protocol/chatstates",
+        		new ChatStateExtension.Provider());
+        pm.addExtensionProvider("inactive","http://jabber.org/protocol/chatstates",
+        		new ChatStateExtension.Provider());
+        pm.addExtensionProvider("gone","http://jabber.org/protocol/chatstates",
+        		new ChatStateExtension.Provider());
+
+        //  XHTML
+        pm.addExtensionProvider("html","http://jabber.org/protocol/xhtml-im",
+        		new XHTMLExtensionProvider());
+
+        //  Group Chat Invitations
+        pm.addExtensionProvider("x","jabber:x:conference",
+        		new GroupChatInvitation.Provider());
+
+        //  Service Discovery # Items    
+        pm.addIQProvider("query","http://jabber.org/protocol/disco#items",
+        		new DiscoverItemsProvider());
+
+        //  Service Discovery # Info
+        pm.addIQProvider("query","http://jabber.org/protocol/disco#info",
+        		new DiscoverInfoProvider());
+
+        //  Data Forms
+        pm.addExtensionProvider("x","jabber:x:data", new DataFormProvider());
+
+        //  MUC User
+        pm.addExtensionProvider("x","http://jabber.org/protocol/muc#user",
+        		new MUCUserProvider());
+
+        //  MUC Admin    
+        pm.addIQProvider("query","http://jabber.org/protocol/muc#admin",
+        		new MUCAdminProvider());
+
+        //  MUC Owner    
+        pm.addIQProvider("query","http://jabber.org/protocol/muc#owner",
+        		new MUCOwnerProvider());
+
+        //  Delayed Delivery
+        pm.addExtensionProvider("x","jabber:x:delay", new DelayInformationProvider());
+
+        //  Version
+        try {
+            pm.addIQProvider("query","jabber:iq:version",
+            		Class.forName("org.jivesoftware.smackx.packet.Version"));
+        } catch (ClassNotFoundException e) {
+            //  Not sure what's happening here.
+        }
+
+        //  VCard
+        pm.addIQProvider("vCard","vcard-temp", new VCardProvider());
+
+        //  Offline Message Requests
+        pm.addIQProvider("offline","http://jabber.org/protocol/offline",
+        		new OfflineMessageRequest.Provider());
+
+        //  Offline Message Indicator
+        pm.addExtensionProvider("offline","http://jabber.org/protocol/offline",
+        		new OfflineMessageInfo.Provider());
+
+        //  Last Activity
+        pm.addIQProvider("query","jabber:iq:last", new LastActivity.Provider());
+
+        //  User Search
+        pm.addIQProvider("query","jabber:iq:search", new UserSearch.Provider());
+
+        //  SharedGroupsInfo
+        pm.addIQProvider("sharedgroup","http://www.jivesoftware.org/protocol/sharedgroup",
+        		new SharedGroupsInfo.Provider());
+
+        //  JEP-33: Extended Stanza Addressing
+        pm.addExtensionProvider("addresses","http://jabber.org/protocol/address",
+        		new MultipleAddressesProvider());
+
+        //   FileTransfer
+        pm.addIQProvider("si","http://jabber.org/protocol/si", new StreamInitiationProvider());
+
+        pm.addIQProvider("query","http://jabber.org/protocol/bytestreams",
+        		new BytestreamsProvider());
+
+        //  Privacy
+        pm.addIQProvider("query","jabber:iq:privacy", new PrivacyProvider());
+        pm.addIQProvider("command", "http://jabber.org/protocol/commands",
+        		new AdHocCommandDataProvider());
+        pm.addExtensionProvider("malformed-action", "http://jabber.org/protocol/commands",
+        		new AdHocCommandDataProvider.MalformedActionError());
+        pm.addExtensionProvider("bad-locale", "http://jabber.org/protocol/commands",
+        		new AdHocCommandDataProvider.BadLocaleError());
+        pm.addExtensionProvider("bad-payload", "http://jabber.org/protocol/commands",
+        		new AdHocCommandDataProvider.BadPayloadError());
+        pm.addExtensionProvider("bad-sessionid", "http://jabber.org/protocol/commands",
+        		new AdHocCommandDataProvider.BadSessionIDError());
+        pm.addExtensionProvider("session-expired", "http://jabber.org/protocol/commands",
+        		new AdHocCommandDataProvider.SessionExpiredError());
     }
-	
-	public Handler getListenerHandler(final Main main) {
-		return new Handler() {
-			public void handleMessage(Message message) {
-	    		Bundle data = message.getData();
-	    		if (D) Log.e(TAG, "++ Initial Message ++");
-	    		if (message.arg1 == Activity.RESULT_OK && data != null) {
-	    			String iam;
-	    			if ((iam = data.getString(Listener.IAM)) == null) {
-	    				if (D) Log.e(TAG, "++ Message MSG ++");
-						updateChat(main);
-	    			} else {
-	    				if (D) Log.e(TAG, "++ Message IAM ++");
-	    				new AddContact(main, true).execute(iam);
-	    			}
-	    		}
-	    	}};	
-	}
-	    
-    public ServiceConnection conn = new ServiceConnection() {
-    	Messenger messenger = null;
-    	
-    	public void onServiceConnected(ComponentName className, IBinder binder) {
-    		messenger = new Messenger(binder);
-    	}
-    	
-    	public void onServiceDisconnected(ComponentName className) {
-    		messenger = null;
-    	}
-    };
-    
-	public String base64Encode(byte[] input) {
-		//encoding  byte array into base 64
-		return Base64.encodeToString(input, Base64.DEFAULT).replaceAll("\\n", "");
-	}
-		
-	public byte[] base64Decode(String input) {
-		//decoding byte array into base64
-		return Base64.decode(input, Base64.DEFAULT);
-	}
-	
-	public boolean isOnline(Context context) {
-	    ConnectivityManager cm =
-	        (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-	    NetworkInfo netInfo = cm.getActiveNetworkInfo();
-	    if (netInfo != null && netInfo.isConnected()) {
-	        return true;
-	    }
-	    return false;
-	}
 }

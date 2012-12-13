@@ -1,4 +1,4 @@
-package de.zauberstuhl.encoapp.async.services;
+package de.zauberstuhl.encoapp.services;
 
 import java.util.Calendar;
 

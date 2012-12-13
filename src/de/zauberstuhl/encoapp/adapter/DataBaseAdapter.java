@@ -78,10 +78,10 @@ public class DataBaseAdapter {
 		return contactList;
 	}
 	
-	public String getContactName(int id) {
+	public String getContactPassword() {
 		SQLiteDatabase db = mDbHelper.getReadableDatabase();
-		Cursor cursor = db.query(ThreadHelper.DB_TABLE, new String[] { ThreadHelper.DB_NAME },
-				ThreadHelper.DB_ID + "=?", new String[] { String.valueOf(id) }, null, null, null, null);
+		Cursor cursor = db.query(ThreadHelper.DB_TABLE, new String[] { ThreadHelper.DB_PASSWORD },
+				ThreadHelper.DB_ID + "=?", new String[] { "0" }, null, null, null, null);
 		if (cursor != null)
 			cursor.moveToFirst();
 		try {
@@ -92,10 +92,10 @@ public class DataBaseAdapter {
 		return null;
 	}
 	
-	public String getContactName(String md5) {
+	public String getContactName(int id) {
 		SQLiteDatabase db = mDbHelper.getReadableDatabase();
 		Cursor cursor = db.query(ThreadHelper.DB_TABLE, new String[] { ThreadHelper.DB_NAME },
-				ThreadHelper.DB_MD5 + "=?", new String[] { md5 }, null, null, null, null);
+				ThreadHelper.DB_ID + "=?", new String[] { String.valueOf(id) }, null, null, null, null);
 		if (cursor != null)
 			cursor.moveToFirst();
 		try {
@@ -112,7 +112,7 @@ public class DataBaseAdapter {
 		if (contact.getID() != -1)
 			values.put(ThreadHelper.DB_ID, contact.getID());
 		values.put(ThreadHelper.DB_NAME, contact.getName());
-		values.put(ThreadHelper.DB_MD5, th.getMd5Sum(contact.getName()));
+		values.put(ThreadHelper.DB_PASSWORD, contact.getPass());
 		values.put(ThreadHelper.DB_PRIVATE, contact.getPriv());
 		values.put(ThreadHelper.DB_PUBLIC, contact.getPub());
 
@@ -193,16 +193,5 @@ public class DataBaseAdapter {
 			Log.e(TAG, e.getMessage());
 		}
 		return result;
-	}
-	
-	public void clearTable() {
-		SQLiteDatabase db = mDbHelper.getWritableDatabase();
-		db.execSQL("DROP TABLE IF EXISTS "+ThreadHelper.DB_TABLE);
-		db.execSQL("CREATE TABLE "+ThreadHelper.DB_TABLE+" ("+
-    			ThreadHelper.DB_ID+" INTEGER PRIMARY KEY, "+
-    			ThreadHelper.DB_NAME+" TEXT, "+
-    			ThreadHelper.DB_MD5+" TEXT, "+
-    			ThreadHelper.DB_PRIVATE+" TEXT, "+
-    			ThreadHelper.DB_PUBLIC+" TEXT)");
 	}
 }

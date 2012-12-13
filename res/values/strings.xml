@@ -6,7 +6,8 @@
     <string name="title_activity_main">3ncoApp</string>
     <string name="generate">Generate</string>
     <string name="private_key">Generate and register a new account</string>
-    <string name="register">Before you can start, you have to register a unique Nickname.</string>
+    <string name="stepone">Step One: Please generate a key pair.</string>
+    <string name="steptwo">Step Two: Register a unique nickname.</string>
     <string name="maintenance">You have no network connection! Please enable your WLAN or GSM.</string>
     
 </resources>
