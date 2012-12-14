@@ -45,7 +45,8 @@ import android.widget.TextView;
 import android.widget.ViewFlipper;
 
 public class Main extends Activity {
-
+	
+	private static Encryption encryption = new Encryption();
 	private static ThreadHelper th = new ThreadHelper();
 	private static String TAG = th.appName+"Main";
 		
@@ -210,26 +211,28 @@ public class Main extends Activity {
         final String msg = msgTextField.getText().toString();
         msgTextField.setText("");
         if (msg.length() > 0) {
-        	if (ThreadHelper.xmppConnection != null ||
-        			ThreadHelper.xmppConnection.isAuthenticated()) {
-        		String user = th.getActiveChatUser();
-        		ChatManager chatmanager = ThreadHelper.xmppConnection.getChatManager();
-        		Chat newChat = chatmanager.createChat(user, null);
-        		try {
-        			newChat.sendMessage(msg);
-        			th.addDiscussionEntry(user, msg, true);
-	    			th.updateChat(this);
-        		} catch (XMPPException e) {
-        			msgTextField.setText(msg);
-        			th.sendNotification(this, "Sending failed!");
+        	new Thread(new Runnable() {
+        		@Override
+				public void run() {
+        			if (ThreadHelper.xmppConnection != null ||
+                			ThreadHelper.xmppConnection.isAuthenticated()) {
+        				DataBaseAdapter db = new DataBaseAdapter(Main.this);
+                		String user = th.getActiveChatUser();
+                		ChatManager chatmanager = ThreadHelper.xmppConnection.getChatManager();
+                		Chat newChat = chatmanager.createChat(user, null);
+                		try {
+                			th.addDiscussionEntry(user, msg, true);
+                			String encMsg = encryption.encrypt(
+                					db.getPublicKey(user), msg);
+                			newChat.sendMessage(encMsg);
+        	    			th.updateChat(Main.this);
+                		} catch (XMPPException e) {
+                			th.sendNotification(Main.this, "Sending failed!");
+                		}
+                		db.close();
+                	} else th.sendNotification(Main.this, "You are not connected!");
         		}
-        	} else th.sendNotification(this, "You are not connected!");
+        	}).start();
         } else th.sendNotification(this, "Need message to send!");
-        
-        DataBaseAdapter db = new DataBaseAdapter(this);
-        th.sendPublicKey(
-				ThreadHelper.xmppConnection, 
-				db, "lukas@connect.3nc0.de");
-        db.close();
     }
 }

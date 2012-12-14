@@ -120,6 +120,20 @@ public class DataBaseAdapter {
 		db.close();
 	}
 	
+	public void update(Contact contact) {
+		SQLiteDatabase db = mDbHelper.getWritableDatabase();
+		ContentValues values = new ContentValues();
+		
+		values.put(ThreadHelper.DB_NAME, contact.getName());
+		values.put(ThreadHelper.DB_PASSWORD, contact.getPass());
+		values.put(ThreadHelper.DB_PRIVATE, contact.getPriv());
+		values.put(ThreadHelper.DB_PUBLIC, contact.getPub());
+
+		db.update(ThreadHelper.DB_TABLE, values, ThreadHelper.DB_NAME + "=?",
+				new String []{ contact.getName() });
+		db.close();
+	}
+	
 	public boolean isset(String name) {
 		SQLiteDatabase db = mDbHelper.getReadableDatabase();
 		try {

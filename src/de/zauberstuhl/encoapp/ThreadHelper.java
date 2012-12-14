@@ -16,7 +16,6 @@ package de.zauberstuhl.encoapp;
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -27,21 +26,23 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 
+import org.jivesoftware.smack.Chat;
+import org.jivesoftware.smack.ChatManager;
 import org.jivesoftware.smack.XMPPConnection;
+import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.provider.PrivacyProvider;
 import org.jivesoftware.smack.provider.ProviderManager;
 import org.jivesoftware.smackx.GroupChatInvitation;
 import org.jivesoftware.smackx.PrivateDataManager;
-import org.jivesoftware.smackx.ServiceDiscoveryManager;
-import org.jivesoftware.smackx.filetransfer.FileTransferManager;
-import org.jivesoftware.smackx.filetransfer.OutgoingFileTransfer;
+import org.jivesoftware.smackx.bytestreams.ibb.provider.CloseIQProvider;
+import org.jivesoftware.smackx.bytestreams.ibb.provider.DataPacketProvider;
+import org.jivesoftware.smackx.bytestreams.socks5.provider.BytestreamsProvider;
 import org.jivesoftware.smackx.packet.ChatStateExtension;
 import org.jivesoftware.smackx.packet.LastActivity;
 import org.jivesoftware.smackx.packet.OfflineMessageInfo;
 import org.jivesoftware.smackx.packet.OfflineMessageRequest;
 import org.jivesoftware.smackx.packet.SharedGroupsInfo;
 import org.jivesoftware.smackx.provider.AdHocCommandDataProvider;
-import org.jivesoftware.smackx.provider.BytestreamsProvider;
 import org.jivesoftware.smackx.provider.DataFormProvider;
 import org.jivesoftware.smackx.provider.DelayInformationProvider;
 import org.jivesoftware.smackx.provider.DiscoverInfoProvider;
@@ -58,6 +59,7 @@ import org.jivesoftware.smackx.provider.XHTMLExtensionProvider;
 import org.jivesoftware.smackx.search.UserSearch;
 
 import de.zauberstuhl.encoapp.adapter.DataBaseAdapter;
+import de.zauberstuhl.encoapp.classes.Contact;
 import de.zauberstuhl.encoapp.classes.User;
 import de.zauberstuhl.encoapp.enc.Encryption;
 import de.zauberstuhl.encoapp.services.Listener;
@@ -110,7 +112,7 @@ public class ThreadHelper {
 	/**
 	 * Database params
 	 */
-	public final static int DATABASE_VERSION = 6;
+	public final static int DATABASE_VERSION = 7;
 	public final static String DATABASE = "3ncoApp";
 	public final static String DB_TABLE = "userTable";
 	public final static String DB_ID = "id";
@@ -139,20 +141,24 @@ public class ThreadHelper {
 	 * Send your public key
 	 * to the user who request it
 	 */
-	public boolean sendPublicKey(XMPPConnection conn, DataBaseAdapter db, String user) {
-		if (conn.isAuthenticated()){
-			byte[] publicKey = base64Decode(db.getPublicKey(0));
-			
-			// Create the file transfer manager
-			FileTransferManager manager = new FileTransferManager(conn);
-			
-			OutgoingFileTransfer transfer =
-				manager.createOutgoingFileTransfer(user);
-			
-			transfer.sendStream(new ByteArrayInputStream(publicKey),
-					"Filename managed by Description", publicKey.length, null);
-			return true;
-		} else return false;
+	public boolean sendPublicKey(final XMPPConnection conn, DataBaseAdapter db, String user) {
+		/**
+		 * At the moment I have a view problems with smack.
+		 * If I get file transfer working I will handle that nicer!!!
+		 */
+		if (ThreadHelper.xmppConnection != null ||
+    			ThreadHelper.xmppConnection.isAuthenticated()) {
+    		String publicKey = db.getPublicKey(0);
+    		ChatManager chatmanager = ThreadHelper.xmppConnection.getChatManager();
+    		Chat newChat = chatmanager.createChat(user, null);
+    		try {
+    			newChat.sendMessage("((PUBLICKEY))"+publicKey);
+    			return true;
+    		} catch (XMPPException e) {
+    			if (D) Log.e(TAG, e.getMessage(), e);
+    		}
+    	}
+		return false;
 	}
 	
 	/**
@@ -217,10 +223,28 @@ public class ThreadHelper {
 			public void handleMessage(Message message) {
 	    		Bundle data = message.getData();
 	    		if (message.arg1 == Activity.RESULT_OK && data != null) {
-	    			addDiscussionEntry(
-	    					data.getString(Listener.ID),
-	    					data.getString(Listener.MESSAGE), false);
-	    			updateChat(main);
+	    			DataBaseAdapter db = new DataBaseAdapter(main);
+	    			String user = data.getString(Listener.ID);
+	    			String msg = data.getString(Listener.MESSAGE);
+	    			
+	    			if (message.arg2 == 666) {
+	    				Contact contact = new Contact(user, null, null, msg);
+	    				
+	    				if (db.isset(user)) db.update(contact);
+	    				else {
+	    					db.addContact(contact);
+	    					main.listItems.add(new User(user));
+							main.adapter.notifyDataSetChanged();
+							sendNotification(main, "New user added!");
+							// Send your own public key
+							sendPublicKey(ThreadHelper.xmppConnection, db, user);
+	    				}
+	    			} else {
+	    				msg = encryption.decrypt(db.getPrivateKey(0), msg);
+		    			addDiscussionEntry(user, msg, false);
+		    			updateChat(main);
+	    			}
+	    			db.close();
 	    		}
 	    	}};	
 	}
@@ -341,110 +365,90 @@ public class ThreadHelper {
      * http://community.igniterealtime.org/message/201866#201866
      */
     public void configure(ProviderManager pm) {
-        //  Private Data Storage
-        pm.addIQProvider("query","jabber:iq:private",
-        		new PrivateDataManager.PrivateDataIQProvider());
-
-        //  Time
+    	// private data storage
+    	pm.addIQProvider("query","jabber:iq:private",
+    			new PrivateDataManager.PrivateDataIQProvider());
+    	// time
         try {
-            pm.addIQProvider("query","jabber:iq:time",
-            		Class.forName("org.jivesoftware.smackx.packet.Time"));
+        	pm.addIQProvider("query","jabber:iq:time",
+        			Class.forName("org.jivesoftware.smackx.packet.Time"));
         } catch (ClassNotFoundException e) {
-            Log.w("TestClient", "Can't load class for org.jivesoftware.smackx.packet.Time");
+            Log.w(TAG, "Can't load class for org.jivesoftware.smackx.packet.Time");
         }
-
-        //  Roster Exchange
+        // roster exchange
         pm.addExtensionProvider("x","jabber:x:roster", new RosterExchangeProvider());
-
-        //  Message Events
+        // message events
         pm.addExtensionProvider("x","jabber:x:event", new MessageEventProvider());
-
-        //  Chat State
+        // chat state
         pm.addExtensionProvider("active","http://jabber.org/protocol/chatstates",
         		new ChatStateExtension.Provider());
         pm.addExtensionProvider("composing","http://jabber.org/protocol/chatstates",
-        		new ChatStateExtension.Provider()); 
+        		new ChatStateExtension.Provider());
         pm.addExtensionProvider("paused","http://jabber.org/protocol/chatstates",
         		new ChatStateExtension.Provider());
         pm.addExtensionProvider("inactive","http://jabber.org/protocol/chatstates",
         		new ChatStateExtension.Provider());
         pm.addExtensionProvider("gone","http://jabber.org/protocol/chatstates",
         		new ChatStateExtension.Provider());
-
-        //  XHTML
+        // XHTML
         pm.addExtensionProvider("html","http://jabber.org/protocol/xhtml-im",
         		new XHTMLExtensionProvider());
-
-        //  Group Chat Invitations
+        // group chat invitations
         pm.addExtensionProvider("x","jabber:x:conference",
         		new GroupChatInvitation.Provider());
-
-        //  Service Discovery # Items    
+        // service discovery # Items
         pm.addIQProvider("query","http://jabber.org/protocol/disco#items",
         		new DiscoverItemsProvider());
-
-        //  Service Discovery # Info
+        // service discovery # Info
         pm.addIQProvider("query","http://jabber.org/protocol/disco#info",
         		new DiscoverInfoProvider());
-
-        //  Data Forms
+        // data forms
         pm.addExtensionProvider("x","jabber:x:data", new DataFormProvider());
-
-        //  MUC User
+        // MUC user
         pm.addExtensionProvider("x","http://jabber.org/protocol/muc#user",
         		new MUCUserProvider());
-
-        //  MUC Admin    
+        // MUC admin
         pm.addIQProvider("query","http://jabber.org/protocol/muc#admin",
         		new MUCAdminProvider());
-
-        //  MUC Owner    
+        // MUC owner    
         pm.addIQProvider("query","http://jabber.org/protocol/muc#owner",
         		new MUCOwnerProvider());
-
-        //  Delayed Delivery
+        // delayed delivery
         pm.addExtensionProvider("x","jabber:x:delay", new DelayInformationProvider());
-
-        //  Version
+        // version
         try {
             pm.addIQProvider("query","jabber:iq:version",
             		Class.forName("org.jivesoftware.smackx.packet.Version"));
         } catch (ClassNotFoundException e) {
-            //  Not sure what's happening here.
+        	Log.e(TAG, e.getMessage(), e);
         }
-
-        //  VCard
+        // vCard
         pm.addIQProvider("vCard","vcard-temp", new VCardProvider());
-
-        //  Offline Message Requests
+        // offline message requests
         pm.addIQProvider("offline","http://jabber.org/protocol/offline",
         		new OfflineMessageRequest.Provider());
-
-        //  Offline Message Indicator
+        // offline message indicator
         pm.addExtensionProvider("offline","http://jabber.org/protocol/offline",
         		new OfflineMessageInfo.Provider());
-
-        //  Last Activity
+        // last activity
         pm.addIQProvider("query","jabber:iq:last", new LastActivity.Provider());
-
-        //  User Search
+        // user search
         pm.addIQProvider("query","jabber:iq:search", new UserSearch.Provider());
-
-        //  SharedGroupsInfo
+        // sharedGroupsInfo
         pm.addIQProvider("sharedgroup","http://www.jivesoftware.org/protocol/sharedgroup",
         		new SharedGroupsInfo.Provider());
-
-        //  JEP-33: Extended Stanza Addressing
+        // JEP-33: Extended Stanza Addressing
         pm.addExtensionProvider("addresses","http://jabber.org/protocol/address",
         		new MultipleAddressesProvider());
-
-        //   FileTransfer
-        pm.addIQProvider("si","http://jabber.org/protocol/si", new StreamInitiationProvider());
-
-        pm.addIQProvider("query","http://jabber.org/protocol/bytestreams",
-        		new BytestreamsProvider());
-
-        //  Privacy
+    	// file transfer
+    	pm.addIQProvider("si","http://jabber.org/protocol/si", new StreamInitiationProvider());
+    	pm.addIQProvider("query","http://jabber.org/protocol/bytestreams",
+    			new BytestreamsProvider());
+        pm.addIQProvider("open","http://jabber.org/protocol/ibb", new BytestreamsProvider());
+        pm.addIQProvider("close","http://jabber.org/protocol/ibb", new CloseIQProvider());
+        pm.addExtensionProvider("data","http://jabber.org/protocol/ibb",
+        		new DataPacketProvider());
+        // privacy
         pm.addIQProvider("query","jabber:iq:privacy", new PrivacyProvider());
         pm.addIQProvider("command", "http://jabber.org/protocol/commands",
         		new AdHocCommandDataProvider());

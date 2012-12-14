@@ -30,8 +30,6 @@ import org.jivesoftware.smack.provider.ProviderManager;
 import de.zauberstuhl.encoapp.Main;
 import de.zauberstuhl.encoapp.R;
 import de.zauberstuhl.encoapp.ThreadHelper;
-import de.zauberstuhl.encoapp.adapter.DataBaseAdapter;
-
 import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -60,6 +58,10 @@ public class Listener extends Service {
 	NotificationManager mNotificationManager;
 	Notification notifyDetails;
 	
+	public Listener() {
+		super.onCreate();
+	}
+	
 	@Override
 	public IBinder onBind(Intent intent) {
 		Bundle extras = intent.getExtras();
@@ -77,6 +79,7 @@ public class Listener extends Service {
 		 */
 		config = new ConnectionConfiguration(th.HOST, th.PORT);
 		config.setSASLAuthenticationEnabled(false);
+		th.configure(ProviderManager.getInstance());
 	}
 	
 	@Override
@@ -84,7 +87,6 @@ public class Listener extends Service {
 		if (ThreadHelper.ACCOUNT_NAME != null &&
 				ThreadHelper.ACCOUNT_PASSWORD != null) {
 			th.cancelListener(false);
-			th.configure(ProviderManager.getInstance());
 			ThreadHelper.xmppConnection = new XMPPConnection(config);
 			try {
 				ThreadHelper.xmppConnection.connect();
@@ -114,10 +116,18 @@ public class Listener extends Service {
 	                if (message != null && message.getBody() != null) {
 	                    response.arg1 = Activity.RESULT_OK;
 	                    String user = packet.getFrom();
+	                    String msg = message.getBody();
+	                    
 	                    user = user.replaceAll("^(.*?)\\/.*$", "$1"); 
 						bundle.putString(ID, user);
-						bundle.putString(MESSAGE, message.getBody());
-						sendNotification(user, message.getBody());
+						
+						Log.e(TAG, "Debugger: "+msg);
+						
+						if (msg.startsWith("((PUBLICKEY))")) {
+							response.arg2 = 666;
+							msg = msg.substring(13, msg.length());
+						} else sendNotification(user, msg);
+						bundle.putString(MESSAGE, msg);
 	                }
 	            }
 	            response.setData(bundle);
