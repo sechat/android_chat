@@ -87,15 +87,6 @@ public class Listener extends Service {
 		if (ThreadHelper.ACCOUNT_NAME != null &&
 				ThreadHelper.ACCOUNT_PASSWORD != null) {
 			th.cancelListener(false);
-			ThreadHelper.xmppConnection = new XMPPConnection(config);
-			try {
-				ThreadHelper.xmppConnection.connect();
-				ThreadHelper.xmppConnection.login(
-						ThreadHelper.ACCOUNT_NAME, ThreadHelper.ACCOUNT_PASSWORD);
-			} catch (XMPPException e) {
-				if (th.D) Log.e(TAG, "Exit. Cannot login!");
-				return Service.START_REDELIVER_INTENT;
-			}
 			new Thread(chatListener).start();
 		}
 		return Service.START_STICKY;
@@ -104,6 +95,15 @@ public class Listener extends Service {
 	private Runnable chatListener = new Runnable() {
 		@Override
 		public void run() {
+			ThreadHelper.xmppConnection = new XMPPConnection(config);
+			try {
+				ThreadHelper.xmppConnection.connect();
+				ThreadHelper.xmppConnection.login(
+						ThreadHelper.ACCOUNT_NAME, ThreadHelper.ACCOUNT_PASSWORD);
+			} catch (XMPPException e) {
+				if (th.D) Log.e(TAG, "Exit. Cannot login!");
+				return;
+			}
 			PacketFilter filter = new AndFilter(new PacketTypeFilter(Message.class));
 	        PacketCollector collector = ThreadHelper.xmppConnection.createPacketCollector(filter);
 	        while (!th.isListenerCancelled()) {
