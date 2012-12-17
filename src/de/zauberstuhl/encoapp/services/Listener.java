@@ -18,6 +18,7 @@ package de.zauberstuhl.encoapp.services;
 
 import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.PacketCollector;
+import org.jivesoftware.smack.Roster;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.filter.AndFilter;
@@ -26,7 +27,6 @@ import org.jivesoftware.smack.filter.PacketTypeFilter;
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smack.provider.ProviderManager;
-
 import de.zauberstuhl.encoapp.Main;
 import de.zauberstuhl.encoapp.R;
 import de.zauberstuhl.encoapp.ThreadHelper;
@@ -50,7 +50,10 @@ public class Listener extends Service {
 	
 	private Messenger outMessenger;
 	private ConnectionConfiguration config;
+	private static boolean userListRunning = false;
 	
+	public static final int PUBKEY = 666;
+	public static final int ROSTER = 667;
 	public static final String ID = "id";
 	public static final String MESSAGE = "message";
 	
@@ -64,6 +67,7 @@ public class Listener extends Service {
 	
 	@Override
 	public IBinder onBind(Intent intent) {
+		if (th.D) Log.e(TAG, "++ ListenerOnBind ++");
 		Bundle extras = intent.getExtras();
 		if (extras != null) outMessenger = (Messenger) extras.get("MESSENGER");
 		return null;
@@ -71,12 +75,14 @@ public class Listener extends Service {
 	
 	@Override
 	public void onCreate() {
+		if (th.D) Log.e(TAG, "++ ListenerOnCreate ++");
 		this.mNotificationManager = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
 		this.notifyDetails = new Notification(R.drawable.ic_launcher,
 				"New message!", System.currentTimeMillis());
 		/**
 		 * Set configuration parameter
 		 */
+		Roster.setDefaultSubscriptionMode(Roster.SubscriptionMode.accept_all);
 		config = new ConnectionConfiguration(th.HOST, th.PORT);
 		config.setSASLAuthenticationEnabled(false);
 		th.configure(ProviderManager.getInstance());
@@ -84,17 +90,19 @@ public class Listener extends Service {
 	
 	@Override
 	public int onStartCommand(Intent intent, int flags, int start) {
+		if (th.D) Log.e(TAG, "++ ListenerOnStartCommand ++");
 		if (ThreadHelper.ACCOUNT_NAME != null &&
 				ThreadHelper.ACCOUNT_PASSWORD != null) {
 			th.cancelListener(false);
-			new Thread(chatListener).start();
+			new Thread(messages).start();
 		}
 		return Service.START_STICKY;
 	}
 	
-	private Runnable chatListener = new Runnable() {
+	private Runnable messages = new Runnable() {
 		@Override
 		public void run() {
+			if (th.D) Log.e(TAG, "++ ListenerMessages started ++");
 			ThreadHelper.xmppConnection = new XMPPConnection(config);
 			try {
 				ThreadHelper.xmppConnection.connect();
@@ -104,12 +112,15 @@ public class Listener extends Service {
 				if (th.D) Log.e(TAG, "Exit. Cannot login!");
 				return;
 			}
+			
 			PacketFilter filter = new AndFilter(new PacketTypeFilter(Message.class));
 	        PacketCollector collector = ThreadHelper.xmppConnection.createPacketCollector(filter);
 	        while (!th.isListenerCancelled()) {
-	        	Bundle bundle = new Bundle();
 	        	android.os.Message response =
-	        		android.os.Message.obtain();
+	        			android.os.Message.obtain();
+	        	Bundle bundle = new Bundle();
+	        	if (!userListRunning)
+	            	new Thread(userlist).start();
 	            Packet packet = collector.nextResult();
 	            if (packet instanceof Message) {
 	                Message message = (Message) packet;
@@ -124,23 +135,50 @@ public class Listener extends Service {
 						Log.e(TAG, "Debugger: "+msg);
 						
 						if (msg.startsWith("((PUBLICKEY))")) {
-							response.arg2 = 666;
+							response.arg2 = PUBKEY;
 							msg = msg.substring(13, msg.length());
 						} else sendNotification(user, msg);
 						bundle.putString(MESSAGE, msg);
 	                }
 	            }
 	            response.setData(bundle);
-				if (outMessenger != null)
-					try {
-						outMessenger.send(response);
-					} catch (RemoteException e) {
-						if (th.D) Log.e(TAG, e.getMessage());
-					}
+	            sendUpdate(response);
 	        }
 			// Disconnect from the server
 			ThreadHelper.xmppConnection.disconnect();
-		}};
+		}
+	};
+		
+	private Runnable userlist = new Runnable() {
+		@Override
+		public void run() {
+			if (th.D) Log.e(TAG, "++ ListenerUserList started ++");
+			userListRunning = true;
+			while (!th.isListenerCancelled() &&
+					ThreadHelper.isActivityVisible()) {
+				final android.os.Message response =
+	        			android.os.Message.obtain();
+				response.arg1 = ROSTER;
+				if (th.D) Log.e(TAG, "Sending results!");
+	            sendUpdate(response);
+	            try {
+					Thread.sleep(ThreadHelper.REFRESH_USER_LIST);
+				} catch (InterruptedException e) {
+					if (th.D) Log.e(TAG, "Interrupt exception on user list thread!", e);
+				}
+			}
+			userListRunning = false;
+		}
+	};
+	
+	private void sendUpdate(android.os.Message response) {
+		if (outMessenger != null)
+			try {
+				outMessenger.send(response);
+			} catch (RemoteException e) {
+				if (th.D) Log.e(TAG, "Main thread wasn't created yet... ");
+			}
+	}
 	
 	public void sendNotification(CharSequence contentTitle, CharSequence contentText) {
 		if (ThreadHelper.isActivityVisible()) return;

@@ -9,26 +9,37 @@
     android:paddingTop="10dp" >
 
     <TextView
-        android:id="@+id/txtTitle"
+        android:id="@+id/userTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
         android:layout_alignParentRight="true"
         android:layout_alignParentTop="true"
+        android:layout_toRightOf="@+id/userStatus"
         android:gravity="left|center"
+        android:text="User"
         android:textColor="@color/black"
         android:textSize="16dp"
         android:textStyle="bold" />
 
     <TextView
-        android:id="@+id/txtFingerprint"
+        android:id="@+id/userFingerprint"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/userTitle"
         android:layout_alignParentBottom="true"
-        android:layout_alignParentLeft="true"
         android:layout_alignParentRight="true"
-        android:layout_below="@+id/txtTitle"
+        android:layout_below="@+id/userTitle"
+        android:text="00000000000"
         android:textColor="@color/grey"
         android:textSize="10dp" />
+
+    <ImageView
+        android:id="@+id/userStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_centerVertical="true"
+        android:layout_marginRight="5dp"
+        android:src="@drawable/offline_icon" />
 
 </RelativeLayout>

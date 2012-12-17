@@ -2,6 +2,7 @@ package de.zauberstuhl.encoapp;
 
 import java.util.Iterator;
 
+import org.jivesoftware.smack.Roster;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smackx.Form;
@@ -16,7 +17,7 @@ import android.content.Context;
 import android.os.AsyncTask;
 import android.util.Log;
 
-public class AddContact extends AsyncTask<String, String, Void> {
+public class AddContact extends AsyncTask<String, String, String> {
 
 	private static ThreadHelper th = new ThreadHelper();
 	private String TAG = th.appName+getClass().getName();
@@ -24,7 +25,6 @@ public class AddContact extends AsyncTask<String, String, Void> {
 	Main main;
 	Context context;
 	XMPPConnection conn;
-	Boolean success = false;
 	
 	public AddContact(Main main, XMPPConnection conn) {
 		this.main = main;
@@ -33,22 +33,43 @@ public class AddContact extends AsyncTask<String, String, Void> {
 	}
 	
 	@Override
-	protected Void doInBackground(String... params) {
+	protected String doInBackground(String... params) {
 		DataBaseAdapter db = new DataBaseAdapter(context);
 		String friend = params[0]+"@"+th.HOST;
-		if (!userExist(params[0])) {
-			publishProgress("Username not found!");
-			return null;
+		
+		if (th.getNickName().equalsIgnoreCase(params[0]))
+			return "You cannot add yourself to the contact list ;)";
+		
+		Roster roster = ThreadHelper.xmppConnection.getRoster();
+		if (roster.contains(friend))
+			return "This user is already in your contact list!";
+		
+		if (!userExist(params[0]))
+			return "Username not found!";
+		
+		if (db.isset(friend))
+			return "Error! User already exists in Database?";
+
+		try {
+			roster.createEntry(friend, friend, new String[] {});
+		} catch (XMPPException e) {
+			Log.e(TAG, "XMPPException on addContact class", e);
 		}
 		
-		if (!db.isset(friend)) {
-			success = true;
+		th.sendPublicKey(ThreadHelper.xmppConnection, db, friend);
+		if (!db.isset(friend))
 			db.addContact(new Contact(friend, null, null, null));
-			th.sendPublicKey(ThreadHelper.xmppConnection, db, friend);
-		}
+		
 		publishProgress(friend);
-		db.close();
 		return null;
+	}
+	
+	@Override
+	protected void onPostExecute(String result) {
+		if (result != null)
+			th.sendNotification(main, result);
+		main.addContactButton.setEnabled(true);
+		main.addContactText.setEnabled(true);
 	}
 
 	@Override
@@ -56,12 +77,8 @@ public class AddContact extends AsyncTask<String, String, Void> {
 		main.runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				if (success) {
-					main.listItems.add(new User(params[0]));
-					main.adapter.notifyDataSetChanged();
-				} else th.sendNotification(main, params[0]);
-				main.addContactButton.setEnabled(true);
-				main.addContactText.setEnabled(true);
+				main.listItems.add(new User(params[0]));
+				main.adapter.notifyDataSetChanged();
 			}
 		});
 	}

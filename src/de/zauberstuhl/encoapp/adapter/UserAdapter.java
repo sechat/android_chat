@@ -23,13 +23,13 @@ import de.zauberstuhl.encoapp.R;
 import de.zauberstuhl.encoapp.ThreadHelper;
 import de.zauberstuhl.encoapp.classes.User;
 import android.content.Context;
-import android.graphics.Typeface;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -70,35 +70,49 @@ public class UserAdapter extends BaseAdapter {
         if (vi == null) vi = inflater.inflate(R.layout.user_adapter, null);
         
         RelativeLayout list = (RelativeLayout)vi.findViewById(R.id.userList);
-        TextView text = (TextView)vi.findViewById(R.id.txtTitle);
-        TextView fingerPrint = (TextView)vi.findViewById(R.id.txtFingerprint);
+        TextView text = (TextView)vi.findViewById(R.id.userTitle);
+        ImageView status = (ImageView)vi.findViewById(R.id.userStatus);
+        TextView fingerPrint = (TextView)vi.findViewById(R.id.userFingerprint);
         
         final User user = data.get(position);
-        DataBaseAdapter db = new DataBaseAdapter(main);
         
-        list.setOnClickListener(new OnClickListener() {
+        OnClickListener online = new OnClickListener() {
         	@Override
     		public void onClick(View arg0) {
-    			String keyName = user.text;
+    			String keyName = user.jid;
     			if (th.D) Log.e(TAG, "Switch to user chat: "+keyName);
-    			
-    			// set window title
     			main.setTitle(keyName);
     			th.setActiveChatUser(keyName);
-    			th.updateListViewEntry(keyName, Typeface.NORMAL, data);
     			notifyDataSetChanged();
     			// switch to the message board
     			main.viewFlipper.showNext();
     			th.updateChat(main);
     		}
-        });
-        text.setText(user.text);
-        text.setTypeface(null, user.typeface);
+        };
+        
+        OnClickListener offline = new OnClickListener() {
+        	@Override
+    		public void onClick(View arg0) {
+    			String keyName = user.jid;
+    			th.sendNotification(main, keyName+" is offline!");
+    		}
+        };
+        
+        if (user.online) {
+        	list.setOnClickListener(online);
+        	status.setImageResource(R.drawable.online_icon);
+        } else {
+        	list.setOnClickListener(offline);
+        	status.setImageResource(R.drawable.offline_icon);
+        }
+        text.setText(user.jid);
+        
+        // set fingerprint
         String fp = null;
-        if ((fp = db.getPublicKey(user.text)) != null)
+        DataBaseAdapter db = new DataBaseAdapter(main);
+        if ((fp = db.getPublicKey(user.jid)) != null)
         	fingerPrint.setText(th.getMd5Sum(fp));
         db.close();
-        
         return vi;
     }
 }

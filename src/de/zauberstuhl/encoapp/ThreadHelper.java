@@ -21,7 +21,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -59,21 +58,12 @@ import org.jivesoftware.smackx.provider.XHTMLExtensionProvider;
 import org.jivesoftware.smackx.search.UserSearch;
 
 import de.zauberstuhl.encoapp.adapter.DataBaseAdapter;
-import de.zauberstuhl.encoapp.classes.Contact;
-import de.zauberstuhl.encoapp.classes.User;
-import de.zauberstuhl.encoapp.enc.Encryption;
-import de.zauberstuhl.encoapp.services.Listener;
-
-import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.ServiceConnection;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
-import android.os.Message;
 import android.os.Messenger;
 import android.util.Base64;
 import android.util.Log;
@@ -81,9 +71,7 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 public class ThreadHelper {
-	
-	private static Encryption encryption = new Encryption();
-	
+		
 	public static XMPPConnection xmppConnection = null;
 	public static String ACCOUNT_NAME = null;
 	public static String ACCOUNT_PASSWORD = null;
@@ -132,6 +120,7 @@ public class ThreadHelper {
 		return ThreadHelper.cancelListener;
 	}
 	public static final int REPEAT_TIME = 1000 * 320;
+	public static final int REFRESH_USER_LIST = 1000 * 10;
 	
 	/////////////////////////////////////////////////////
 	//	Starting some public function
@@ -214,41 +203,7 @@ public class ThreadHelper {
 			return "";
 		return nick;
 	}
-	
-	/**
-	 * This Handler waits for incoming messages
-	 */
-	public Handler getListenerHandler(final Main main) {
-		return new Handler() {
-			public void handleMessage(Message message) {
-	    		Bundle data = message.getData();
-	    		if (message.arg1 == Activity.RESULT_OK && data != null) {
-	    			DataBaseAdapter db = new DataBaseAdapter(main);
-	    			String user = data.getString(Listener.ID);
-	    			String msg = data.getString(Listener.MESSAGE);
-	    			
-	    			if (message.arg2 == 666) {
-	    				Contact contact = new Contact(user, null, null, msg);
-	    				
-	    				if (db.isset(user)) db.update(contact);
-	    				else {
-	    					db.addContact(contact);
-	    					main.listItems.add(new User(user));
-							main.adapter.notifyDataSetChanged();
-							sendNotification(main, "New user added!");
-							// Send your own public key
-							sendPublicKey(ThreadHelper.xmppConnection, db, user);
-	    				}
-	    			} else {
-	    				msg = encryption.decrypt(db.getPrivateKey(0), msg);
-		    			addDiscussionEntry(user, msg, false);
-		    			updateChat(main);
-	    			}
-	    			db.close();
-	    		}
-	    	}};	
-	}
-	
+
 	public String base64Encode(byte[] input) {
 		//encoding  byte array into base 64
 		return Base64.encodeToString(input, Base64.DEFAULT).replaceAll("\\n", "");
@@ -297,18 +252,6 @@ public class ThreadHelper {
 	    }
 	    return false;
 	}
-	
-	public ServiceConnection conn = new ServiceConnection() {
-    	Messenger messenger = null;
-
-    	public void onServiceConnected(ComponentName className, IBinder binder) {
-    		messenger = new Messenger(binder);
-    	}
-
-    	public void onServiceDisconnected(ComponentName className) {
-    		messenger = null;
-    	}
-    };
     
 	public void updateChat(final Main main) {
 		main.runOnUiThread(new Runnable(){
@@ -327,15 +270,14 @@ public class ThreadHelper {
 		});
 	}
 	
-	public void updateListViewEntry(String keyName, Integer typeface, ArrayList<User> listItems) {
-    	for (int i = 0; i < listItems.size(); i++) {
-    		if (listItems.get(i).text.equals(keyName)) {
-    			listItems.set(i, new User(keyName, typeface));
-    			break;
-    		}
+	public ServiceConnection conn = new ServiceConnection() {
+    	public void onServiceConnected(ComponentName className, IBinder binder) {
+    		new Messenger(binder);
     	}
-	}
-	
+
+    	public void onServiceDisconnected(ComponentName className) {}
+    };
+
 	/** ******************************************** **/
 	
 	public void close(ObjectOutputStream oout) {

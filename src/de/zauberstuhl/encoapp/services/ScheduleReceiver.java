@@ -10,10 +10,10 @@ import android.content.Context;
 import android.content.Intent;
 
 public class ScheduleReceiver extends BroadcastReceiver {
-
+		
 	@Override
 	public void onReceive(Context context, Intent intent) {
-        Intent service = new Intent(context, ListenerReceiver.class);
+        Intent service = new Intent(context, Listener.class);
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         PendingIntent pending = PendingIntent.getBroadcast(
         		context, 0, service, PendingIntent.FLAG_CANCEL_CURRENT);
@@ -24,5 +24,4 @@ public class ScheduleReceiver extends BroadcastReceiver {
         alarmManager.setInexactRepeating(
         		AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), ThreadHelper.REPEAT_TIME, pending);
 	}
-
 }

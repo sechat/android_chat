@@ -16,25 +16,23 @@ package de.zauberstuhl.encoapp.classes;
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import android.graphics.Typeface;
-
 public class User {
-	public String text;
-	public int typeface;
+	public String jid;
+	public boolean online;
 	
     public User() {
         super();
     }
    
-    public User(String text) {
+    public User(String jid) {
         super();
-        this.text = text;
-        this.typeface = Typeface.NORMAL;
+        this.jid = jid;
+        this.online = false;
     }
     
-    public User(String text, int typeface) {
+    public User(String jid, boolean online) {
         super();
-        this.text = text;
-        this.typeface = typeface;
+        this.jid = jid;
+        this.online = online;
     }
 }

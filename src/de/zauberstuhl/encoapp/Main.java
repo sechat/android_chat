@@ -17,21 +17,26 @@ package de.zauberstuhl.encoapp;
  */
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 
 import org.jivesoftware.smack.Chat;
 import org.jivesoftware.smack.ChatManager;
+import org.jivesoftware.smack.Roster;
+import org.jivesoftware.smack.RosterEntry;
 import org.jivesoftware.smack.XMPPException;
 import de.zauberstuhl.encoapp.adapter.DataBaseAdapter;
 import de.zauberstuhl.encoapp.adapter.MessageAdapter;
 import de.zauberstuhl.encoapp.adapter.UserAdapter;
+import de.zauberstuhl.encoapp.classes.Contact;
 import de.zauberstuhl.encoapp.classes.User;
-import de.zauberstuhl.encoapp.enc.Encryption;
 import de.zauberstuhl.encoapp.services.Listener;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.os.Messenger;
 import android.text.Html;
 import android.util.Log;
@@ -127,15 +132,7 @@ public class Main extends Activity {
 		    		getResources().getString(R.string.maintenance)));
     		return;
     	}
-    	/**
-    	 * Start service listener
-    	 */
-    	Intent service = new Intent(getBaseContext(), Listener.class);
-    	Messenger messenger = new Messenger(th.getListenerHandler(this));
-        service.putExtra("MESSENGER", messenger);
-        bindService(service, th.conn, Context.BIND_AUTO_CREATE);
-    	getBaseContext().startService(service);
-    	    	
+    	
     	DataBaseAdapter db = new DataBaseAdapter(this);
     	if (this.getBaseContext().getDatabasePath(
     			ThreadHelper.DATABASE).exists() && db.isset(0)) {
@@ -144,8 +141,7 @@ public class Main extends Activity {
     		ThreadHelper.ACCOUNT_NAME = user;
     		ThreadHelper.ACCOUNT_PASSWORD = db.getContactPassword();
     		setTitle("Welcome "+th.getNickName());
-    		
-    		listItems = db.getAllContacts();
+
     		adapter = new UserAdapter(this, listItems);
     		myContacts.setAdapter(adapter);
     		
@@ -156,6 +152,14 @@ public class Main extends Activity {
         	genNickname.setVisibility(View.GONE);
         	genButton.setVisibility(View.GONE);
         	genBar.setVisibility(View.GONE);
+        	/**
+        	 * Start service listener
+        	 */
+            Intent service = new Intent(getBaseContext(), Listener.class);
+            Messenger messenger = new Messenger(ListenerHandler);
+            service.putExtra("MESSENGER", messenger);
+            bindService(service, th.conn, Context.BIND_AUTO_CREATE);
+        	startService(service);
     	} else register();
     	db.close();
     }
@@ -235,4 +239,61 @@ public class Main extends Activity {
         	}).start();
         } else th.sendNotification(this, "Need message to send!");
     }
+    
+	/**
+	 * This is the Handler for our Listener service
+	 */
+    private Handler ListenerHandler = new Handler() {
+    	@Override
+    	public void handleMessage(Message message) {
+    		Bundle data = message.getData();
+    		Roster roster = ThreadHelper.xmppConnection.getRoster();
+    		
+    		if (message.arg1 == Listener.ROSTER) {
+    			if (th.D) Log.e(TAG, "Intialize listItems!");
+    			listItems.clear();
+    			for (Iterator<RosterEntry> i = roster.getEntries().iterator(); i.hasNext();) {
+    				RosterEntry re = i.next();
+    				listItems.add(new User(re.getUser(),
+    						roster.getPresence(re.getUser()).isAvailable()));
+    			}
+    			if (th.D) Log.e(TAG, "Data set changed on user adapater!");
+    			adapter.notifyDataSetChanged();
+    		}
+    		
+    		if (message.arg1 == Activity.RESULT_OK && data != null) {
+    			DataBaseAdapter db = new DataBaseAdapter(Main.this);
+    			String user = data.getString(Listener.ID);
+    			String msg = data.getString(Listener.MESSAGE);
+    			
+    			if (message.arg2 == Listener.PUBKEY) {
+    				if (th.D) Log.e(TAG, "Received public key!");
+    				Contact contact = new Contact(user, null, null, msg);
+    				if (th.D) Log.e(TAG, "Subscription request from "+user);
+    				try {
+    					roster.createEntry(user, user, new String[] {});
+    				} catch (XMPPException e) {
+    					Log.e(TAG, "XMPPException on Handler class", e);
+    				}
+    				
+    				if (db.isset(user)) db.update(contact);
+    				else {
+    					db.addContact(contact);
+    					listItems.add(new User(user,
+    							roster.getPresence(user).isAvailable()));
+						adapter.notifyDataSetChanged();
+						th.sendNotification(Main.this, "New user added!");
+						// Send your own public key
+						th.sendPublicKey(ThreadHelper.xmppConnection, db, user);
+    				}
+    			} else {
+    				if (th.D) Log.e(TAG, "Received user message!");
+    				msg = encryption.decrypt(db.getPrivateKey(0), msg);
+	    			th.addDiscussionEntry(user, msg, false);
+	    			th.updateChat(Main.this);
+    			}
+    			db.close();
+    		}
+    	}
+	};
 }

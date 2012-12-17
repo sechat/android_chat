@@ -1,4 +1,4 @@
-package de.zauberstuhl.encoapp.enc;
+package de.zauberstuhl.encoapp;
 
 /**
  * Copyright (C) 2012 Lukas Matt <lukas@zauberstuhl.de>
@@ -34,7 +34,6 @@ import javax.crypto.NoSuchPaddingException;
 
 import android.util.Log;
 
-import de.zauberstuhl.encoapp.ThreadHelper;
 
 public class Encryption {
 

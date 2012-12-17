@@ -12,7 +12,6 @@ import org.jivesoftware.smack.provider.ProviderManager;
 
 import de.zauberstuhl.encoapp.adapter.DataBaseAdapter;
 import de.zauberstuhl.encoapp.classes.Contact;
-import de.zauberstuhl.encoapp.enc.Encryption;
 import android.os.AsyncTask;
 import android.util.Log;
 
