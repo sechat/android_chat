@@ -20,8 +20,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 
-import org.jivesoftware.smack.Chat;
-import org.jivesoftware.smack.ChatManager;
 import org.jivesoftware.smack.Roster;
 import org.jivesoftware.smack.RosterEntry;
 import org.jivesoftware.smack.XMPPException;
@@ -32,7 +30,9 @@ import de.zauberstuhl.encoapp.classes.Contact;
 import de.zauberstuhl.encoapp.classes.User;
 import de.zauberstuhl.encoapp.services.Listener;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
@@ -54,24 +54,23 @@ public class Main extends Activity {
 	private static Encryption encryption = new Encryption();
 	private static ThreadHelper th = new ThreadHelper();
 	private static String TAG = th.appName+"Main";
+	
+	private static boolean isBound;
 		
     Button sendButton;
 	public Button genButton, addContactButton;
     public ProgressBar genBar;
     public EditText genNickname;
-
 	EditText msgTextField;
 	public EditText addContactText;
     public TextView infoBox;
     public ListView myContacts;
-
 	ListView msgBoard;
-    
     public ViewFlipper viewFlipper;
     
     LinkedHashMap<String, String> msgListItems = new LinkedHashMap<String, String>();
-	public ArrayList<User> listItems = new ArrayList<User>();
-    public UserAdapter adapter;
+	ArrayList<User> listItems = new ArrayList<User>();
+    UserAdapter adapter;
     MessageAdapter msgAdapter;
     
     @Override
@@ -87,6 +86,7 @@ public class Main extends Activity {
         super.onPause();
         if (th.D) Log.e(TAG, "++ onPause ++");
         ThreadHelper.activityPaused();
+        if (isBound) unbindService(th.conn);
     }
     
     @Override
@@ -128,8 +128,8 @@ public class Main extends Activity {
     	boolean serverAlive = th.isOnline(getBaseContext());
     	if (!serverAlive) {
     		infoBox.setVisibility(View.VISIBLE);
-    		infoBox.setText(Html.fromHtml(
-		    		getResources().getString(R.string.maintenance)));
+    		infoBox.setText(
+    				Html.fromHtml(getString(R.string.maintenance)));
     		return;
     	}
     	
@@ -142,6 +142,7 @@ public class Main extends Activity {
     		ThreadHelper.ACCOUNT_PASSWORD = db.getContactPassword();
     		setTitle("Welcome "+th.getNickName());
 
+    		listItems = db.getAllContacts();
     		adapter = new UserAdapter(this, listItems);
     		myContacts.setAdapter(adapter);
     		
@@ -158,7 +159,7 @@ public class Main extends Activity {
             Intent service = new Intent(getBaseContext(), Listener.class);
             Messenger messenger = new Messenger(ListenerHandler);
             service.putExtra("MESSENGER", messenger);
-            bindService(service, th.conn, Context.BIND_AUTO_CREATE);
+            isBound = bindService(service, th.conn, Context.BIND_AUTO_CREATE);
         	startService(service);
     	} else register();
     	db.close();
@@ -167,12 +168,12 @@ public class Main extends Activity {
     public void register() {
 		infoBox.setVisibility(View.VISIBLE);
     	if (Encryption.privateKey == null) {
-    		infoBox.setText(Html.fromHtml(
-    	    		getResources().getString(R.string.stepone)));
+    		infoBox.setText(
+    				Html.fromHtml(getString(R.string.stepone)));
     		genNickname.setVisibility(View.GONE);
     	} else {
-    		infoBox.setText(Html.fromHtml(
-    	    		getResources().getString(R.string.steptwo)));
+    		infoBox.setText(
+    				Html.fromHtml(getString(R.string.steptwo)));
     		genNickname.setVisibility(View.VISIBLE);
     	}
     	genButton.setVisibility(View.VISIBLE);
@@ -188,6 +189,11 @@ public class Main extends Activity {
                setTitle("Welcome "+th.getNickName());
                return true;
             }
+            // reset the active user
+            if (th.getActiveChatUser() != null) {
+            	th.setActiveChatUser(null);
+            	return true;
+            }
         }
         return super.onKeyDown(keyCode, event);
     }
@@ -197,7 +203,7 @@ public class Main extends Activity {
     	addContactButton.setEnabled(false);
     	addContactText.setEnabled(false);
     	if (friend.length() > 0) {
-    		new AddContact(this, ThreadHelper.xmppConnection).execute(friend);
+    		new AddContact(this).execute(friend);
     	} else {
     		th.sendNotification(this, "Please type a Nickname into the textfield!");
     		addContactButton.setEnabled(true);
@@ -215,28 +221,7 @@ public class Main extends Activity {
         final String msg = msgTextField.getText().toString();
         msgTextField.setText("");
         if (msg.length() > 0) {
-        	new Thread(new Runnable() {
-        		@Override
-				public void run() {
-        			if (ThreadHelper.xmppConnection != null ||
-                			ThreadHelper.xmppConnection.isAuthenticated()) {
-        				DataBaseAdapter db = new DataBaseAdapter(Main.this);
-                		String user = th.getActiveChatUser();
-                		ChatManager chatmanager = ThreadHelper.xmppConnection.getChatManager();
-                		Chat newChat = chatmanager.createChat(user, null);
-                		try {
-                			th.addDiscussionEntry(user, msg, true);
-                			String encMsg = encryption.encrypt(
-                					db.getPublicKey(user), msg);
-                			newChat.sendMessage(encMsg);
-        	    			th.updateChat(Main.this);
-                		} catch (XMPPException e) {
-                			th.sendNotification(Main.this, "Sending failed!");
-                		}
-                		db.close();
-                	} else th.sendNotification(Main.this, "You are not connected!");
-        		}
-        	}).start();
+        	new SendMessage(this).execute(msg);
         } else th.sendNotification(this, "Need message to send!");
     }
     
@@ -251,43 +236,66 @@ public class Main extends Activity {
     		
     		if (message.arg1 == Listener.ROSTER) {
     			if (th.D) Log.e(TAG, "Intialize listItems!");
-    			listItems.clear();
-    			for (Iterator<RosterEntry> i = roster.getEntries().iterator(); i.hasNext();) {
-    				RosterEntry re = i.next();
-    				listItems.add(new User(re.getUser(),
+    			ArrayList<User> refreshedUserList = new ArrayList<User>();
+    			Iterator<RosterEntry> ire = roster.getEntries().iterator();
+    			while (ire.hasNext()) {
+    				RosterEntry re = ire.next();
+    				refreshedUserList.add(new User(re.getUser(),
     						roster.getPresence(re.getUser()).isAvailable()));
     			}
     			if (th.D) Log.e(TAG, "Data set changed on user adapater!");
+    			listItems.clear();
+    			listItems.addAll(refreshedUserList);
     			adapter.notifyDataSetChanged();
     		}
     		
     		if (message.arg1 == Activity.RESULT_OK && data != null) {
-    			DataBaseAdapter db = new DataBaseAdapter(Main.this);
+    			final DataBaseAdapter db = new DataBaseAdapter(Main.this);
     			String user = data.getString(Listener.ID);
     			String msg = data.getString(Listener.MESSAGE);
     			
     			if (message.arg2 == Listener.PUBKEY) {
-    				if (th.D) Log.e(TAG, "Received public key!");
-    				Contact contact = new Contact(user, null, null, msg);
-    				if (th.D) Log.e(TAG, "Subscription request from "+user);
+    				if (th.D) Log.e(TAG, "Received public key from "+user);
     				try {
-    					roster.createEntry(user, user, new String[] {});
+    					//if (!roster.contains(user))
+    						roster.createEntry(user, user, new String[] {});
     				} catch (XMPPException e) {
     					Log.e(TAG, "XMPPException on Handler class", e);
     				}
     				
-    				if (db.isset(user)) db.update(contact);
-    				else {
+    				if (db.isset(user)) {
+    					final Contact contact = new Contact(user, null, null, msg);
+    					String pk = null;
+    			        if ((pk = db.getPublicKey(user)) != null) {
+    			        	String fp = th.getMd5Sum(pk);
+    			        	String nfp = th.getMd5Sum(msg);
+    			        	if (!fp.equals(nfp)) {
+    							DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener() {
+    							    @Override
+    							    public void onClick(DialogInterface dialog, int which) {
+    							        if (which == DialogInterface.BUTTON_POSITIVE)
+    							        	db.update(contact);
+    							    }};
+    							AlertDialog.Builder builder = new AlertDialog.Builder(getBaseContext());
+    							builder.setMessage("Warning! The new requested public key "+
+    			        				"has a different fingerprint!\n"+
+    			        				"Do you accept the new one?\n\n"+nfp)
+    								.setPositiveButton("Yes", dialogClickListener)
+    								.setNegativeButton("No", dialogClickListener).show();
+    			        	} else db.update(contact);
+    			        } else db.update(contact);
+    				} else {
+    					Contact contact = new Contact(user, null, null, msg);
     					db.addContact(contact);
     					listItems.add(new User(user,
     							roster.getPresence(user).isAvailable()));
 						adapter.notifyDataSetChanged();
 						th.sendNotification(Main.this, "New user added!");
-						// Send your own public key
-						th.sendPublicKey(ThreadHelper.xmppConnection, db, user);
     				}
     			} else {
     				if (th.D) Log.e(TAG, "Received user message!");
+    				if (!roster.contains(user))
+    					new AddContact(Main.this).execute(user);
     				msg = encryption.decrypt(db.getPrivateKey(0), msg);
 	    			th.addDiscussionEntry(user, msg, false);
 	    			th.updateChat(Main.this);

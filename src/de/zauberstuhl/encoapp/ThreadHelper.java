@@ -130,7 +130,7 @@ public class ThreadHelper {
 	 * Send your public key
 	 * to the user who request it
 	 */
-	public boolean sendPublicKey(final XMPPConnection conn, DataBaseAdapter db, String user) {
+	public boolean sendPublicKey(DataBaseAdapter db, String user) {
 		/**
 		 * At the moment I have a view problems with smack.
 		 * If I get file transfer working I will handle that nicer!!!
@@ -158,15 +158,15 @@ public class ThreadHelper {
         String hours = String.valueOf(date.getHours());
         String minutes = String.valueOf(date.getMinutes());
 		LinkedHashMap<String, String> map = ThreadHelper.userDiscussion.get(user);
+		
 		if (map == null) map = new LinkedHashMap<String, String>();
-		String identifier = String.valueOf(map.size());
-		if (me) identifier = MY_ID + hours + minutes + identifier;
-		else identifier = USER_ID + hours + minutes + identifier;
+		String ident = String.valueOf(map.size());
+		if (me) ident = MY_ID + hours + minutes + ident;
+		else ident = USER_ID + hours + minutes + ident;
 		
-		if (D) Log.e(TAG, "discussion user: "+user);
-		
-		map.put(identifier, message);
+		map.put(ident, message);
 		ThreadHelper.userDiscussion.put(user, map);
+		if (D) Log.e(TAG, "Added new discussion entry to "+user);
 	}
 	
 	public static boolean isActivityVisible() {

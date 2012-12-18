@@ -35,7 +35,7 @@ public class DataBaseHelper extends SQLiteOpenHelper {
 				ThreadHelper.DATABASE_VERSION);
 		this.context = context;
 	}
-	
+		
 	public void createDataBase() throws IOException {
 		//If database not exists copy it from the assets
 		boolean mDataBaseExist = checkDataBase();

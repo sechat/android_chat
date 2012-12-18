@@ -16,9 +16,13 @@ package de.zauberstuhl.encoapp.services;
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+import java.util.Collection;
+import java.util.Iterator;
+
 import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.PacketCollector;
 import org.jivesoftware.smack.Roster;
+import org.jivesoftware.smack.RosterListener;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.filter.AndFilter;
@@ -26,10 +30,12 @@ import org.jivesoftware.smack.filter.PacketFilter;
 import org.jivesoftware.smack.filter.PacketTypeFilter;
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Packet;
+import org.jivesoftware.smack.packet.Presence;
 import org.jivesoftware.smack.provider.ProviderManager;
 import de.zauberstuhl.encoapp.Main;
 import de.zauberstuhl.encoapp.R;
 import de.zauberstuhl.encoapp.ThreadHelper;
+import de.zauberstuhl.encoapp.adapter.DataBaseAdapter;
 import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -109,9 +115,33 @@ public class Listener extends Service {
 				ThreadHelper.xmppConnection.login(
 						ThreadHelper.ACCOUNT_NAME, ThreadHelper.ACCOUNT_PASSWORD);
 			} catch (XMPPException e) {
-				if (th.D) Log.e(TAG, "Exit. Cannot login!");
+				if (th.D) Log.e(TAG, "Exit. Cannot login!", e);
 				return;
 			}
+			
+			final Roster roster = ThreadHelper.xmppConnection.getRoster();
+			roster.addRosterListener(new RosterListener() {
+				@Override
+				public void entriesAdded(Collection<String> userCollection) {
+					Iterator<String> uc = userCollection.iterator();
+					while (uc.hasNext()) {
+						String jid = uc.next();
+						//TODO: Disabled the online check now everyone receive public key
+						//if (roster.getPresence(jid).isAvailable()) {
+							DataBaseAdapter db = new DataBaseAdapter(getBaseContext());
+							th.sendPublicKey(db, jid);
+							if (th.D) Log.e(TAG, "Send publickey to "+jid);
+							db.close();
+						//}
+					}
+				}
+				@Override
+				public void entriesDeleted(Collection<String> arg0) {}
+				@Override
+				public void entriesUpdated(Collection<String> arg0) {}
+				@Override
+				public void presenceChanged(Presence presence) {}
+			});
 			
 			PacketFilter filter = new AndFilter(new PacketTypeFilter(Message.class));
 	        PacketCollector collector = ThreadHelper.xmppConnection.createPacketCollector(filter);
@@ -119,8 +149,10 @@ public class Listener extends Service {
 	        	android.os.Message response =
 	        			android.os.Message.obtain();
 	        	Bundle bundle = new Bundle();
-	        	if (!userListRunning)
-	            	new Thread(userlist).start();
+	        	if (!userListRunning &&
+	        		// Make sure that the process runs only if 
+	        		// the activity is visible. Saves battery!
+	        		ThreadHelper.isActivityVisible()) new Thread(userlist).start();
 	            Packet packet = collector.nextResult();
 	            if (packet instanceof Message) {
 	                Message message = (Message) packet;

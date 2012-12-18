@@ -9,5 +9,6 @@
     <string name="stepone">Step One: Please generate a key pair.</string>
     <string name="steptwo">Step Two: Register a unique nickname.</string>
     <string name="maintenance">You have no network connection! Please enable your WLAN or GSM.</string>
+    <string name="nopubkey">00000000000</string>
     
 </resources>

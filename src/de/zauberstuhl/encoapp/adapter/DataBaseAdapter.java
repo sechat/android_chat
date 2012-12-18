@@ -134,6 +134,14 @@ public class DataBaseAdapter {
 		db.close();
 	}
 	
+	public void deleteEntry(String jid) {
+		SQLiteDatabase db = mDbHelper.getWritableDatabase();
+		int result = db.delete(ThreadHelper.DB_TABLE,
+				ThreadHelper.DB_NAME + "=?", new String[] { jid });
+		if (th.D) Log.e(TAG, "Deleted user entry: "+result);
+		db.close();
+	}
+	
 	public boolean isset(String name) {
 		SQLiteDatabase db = mDbHelper.getReadableDatabase();
 		try {

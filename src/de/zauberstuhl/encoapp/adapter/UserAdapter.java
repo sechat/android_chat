@@ -18,15 +18,22 @@ package de.zauberstuhl.encoapp.adapter;
 
 import java.util.ArrayList;
 
+import org.jivesoftware.smack.Roster;
+import org.jivesoftware.smack.RosterEntry;
+import org.jivesoftware.smack.XMPPException;
+
 import de.zauberstuhl.encoapp.Main;
 import de.zauberstuhl.encoapp.R;
 import de.zauberstuhl.encoapp.ThreadHelper;
 import de.zauberstuhl.encoapp.classes.User;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
@@ -74,9 +81,9 @@ public class UserAdapter extends BaseAdapter {
         ImageView status = (ImageView)vi.findViewById(R.id.userStatus);
         TextView fingerPrint = (TextView)vi.findViewById(R.id.userFingerprint);
         
+        final DataBaseAdapter db = new DataBaseAdapter(main);
         final User user = data.get(position);
-        
-        OnClickListener online = new OnClickListener() {
+        list.setOnClickListener(new OnClickListener() {
         	@Override
     		public void onClick(View arg0) {
     			String keyName = user.jid;
@@ -88,30 +95,48 @@ public class UserAdapter extends BaseAdapter {
     			main.viewFlipper.showNext();
     			th.updateChat(main);
     		}
-        };
+        });
+        list.setOnLongClickListener(new OnLongClickListener() {
+			@Override
+			public boolean onLongClick(View arg0) {
+				if (ThreadHelper.xmppConnection != null &&
+						ThreadHelper.xmppConnection.isAuthenticated()) {
+					DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener() {
+					    @Override
+					    public void onClick(DialogInterface dialog, int which) {
+					        if (which == DialogInterface.BUTTON_POSITIVE) {
+					        	Roster roster = ThreadHelper.xmppConnection.getRoster();
+								if (roster.contains(user.jid)) {
+									RosterEntry entry = roster.getEntry(user.jid);
+									try {
+										roster.removeEntry(entry);
+									} catch (XMPPException e) {
+										if (th.D) Log.e(TAG, "Failed removing user from roster!", e);
+									}
+									db.deleteEntry(user.jid);
+								}
+					        }
+					    }
+					};
+					
+					AlertDialog.Builder builder = new AlertDialog.Builder(main);
+					builder.setMessage("Do you want to remove the user?")
+						.setPositiveButton("Yes", dialogClickListener)
+						.setNegativeButton("No", dialogClickListener).show();
+				}
+				return true;
+			}
+        });
         
-        OnClickListener offline = new OnClickListener() {
-        	@Override
-    		public void onClick(View arg0) {
-    			String keyName = user.jid;
-    			th.sendNotification(main, keyName+" is offline!");
-    		}
-        };
-        
-        if (user.online) {
-        	list.setOnClickListener(online);
-        	status.setImageResource(R.drawable.online_icon);
-        } else {
-        	list.setOnClickListener(offline);
-        	status.setImageResource(R.drawable.offline_icon);
-        }
+        if (user.online) status.setImageResource(R.drawable.online_icon);
+        else status.setImageResource(R.drawable.offline_icon);
         text.setText(user.jid);
         
         // set fingerprint
         String fp = null;
-        DataBaseAdapter db = new DataBaseAdapter(main);
         if ((fp = db.getPublicKey(user.jid)) != null)
         	fingerPrint.setText(th.getMd5Sum(fp));
+        else fingerPrint.setText(main.getString(R.string.nopubkey));
         db.close();
         return vi;
     }

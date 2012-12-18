@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
       package="de.zauberstuhl.encoapp"
-      android:versionCode="16"
+      android:versionCode="18"
       android:versionName="1.15">
     
   	<uses-permission android:name="android.permission.INTERNET" />
@@ -32,7 +32,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <service android:name=".services.Listener"></service>
+        <service
+            android:name=".services.Listener" >
+        </service>
         <receiver android:name=".services.ScheduleReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
