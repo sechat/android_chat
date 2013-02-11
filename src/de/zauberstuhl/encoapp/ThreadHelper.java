@@ -112,14 +112,14 @@ public class ThreadHelper {
 	/**
 	 * Service
 	 */
-	private static boolean cancelListener = false;
-	public void cancelListener(boolean status) {
-		ThreadHelper.cancelListener = status;
+	private static Thread listenerThread = null;
+	public void setListenerThread(Thread th) {
+		ThreadHelper.listenerThread = th;
 	}
-	public boolean isListenerCancelled() {
-		return ThreadHelper.cancelListener;
+	public Thread getListenerThread() {
+		return ThreadHelper.listenerThread;
 	}
-	public static final int REPEAT_TIME = 1000 * 320;
+	public static final int REPEAT_TIME = 1000 * 60;
 	public static final int REFRESH_USER_LIST = 1000 * 10;
 	
 	/////////////////////////////////////////////////////

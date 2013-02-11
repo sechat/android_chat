@@ -58,6 +58,7 @@ public class Listener extends Service {
 	private ConnectionConfiguration config;
 	private static boolean userListRunning = false;
 	
+	public static boolean listenerRunning = true;
 	public static final int PUBKEY = 666;
 	public static final int ROSTER = 667;
 	public static final String ID = "id";
@@ -99,8 +100,10 @@ public class Listener extends Service {
 		if (th.D) Log.e(TAG, "++ ListenerOnStartCommand ++");
 		if (ThreadHelper.ACCOUNT_NAME != null &&
 				ThreadHelper.ACCOUNT_PASSWORD != null) {
-			th.cancelListener(false);
-			new Thread(messages).start();
+			if (th.getListenerThread() == null || !th.getListenerThread().isAlive()) {
+				th.setListenerThread(new Thread(messages));
+				th.getListenerThread().start();
+			} else if (th.D) Log.e(TAG, "ListenerThread is alive. Skipping it!");
 		}
 		return Service.START_STICKY;
 	}
@@ -108,7 +111,7 @@ public class Listener extends Service {
 	private Runnable messages = new Runnable() {
 		@Override
 		public void run() {
-			if (th.D) Log.e(TAG, "++ ListenerMessages started ++");
+			if (th.D) Log.e(TAG, "++ ListenerThread started ++");
 			ThreadHelper.xmppConnection = new XMPPConnection(config);
 			try {
 				ThreadHelper.xmppConnection.connect();
@@ -145,7 +148,7 @@ public class Listener extends Service {
 			
 			PacketFilter filter = new AndFilter(new PacketTypeFilter(Message.class));
 	        PacketCollector collector = ThreadHelper.xmppConnection.createPacketCollector(filter);
-	        while (!th.isListenerCancelled()) {
+	        while (listenerRunning) {
 	        	android.os.Message response =
 	        			android.os.Message.obtain();
 	        	Bundle bundle = new Bundle();
@@ -178,6 +181,7 @@ public class Listener extends Service {
 	        }
 			// Disconnect from the server
 			ThreadHelper.xmppConnection.disconnect();
+			if (th.D) Log.e(TAG, "++ ListenerThread stopped ++");
 		}
 	};
 		
@@ -186,12 +190,11 @@ public class Listener extends Service {
 		public void run() {
 			if (th.D) Log.e(TAG, "++ ListenerUserList started ++");
 			userListRunning = true;
-			while (!th.isListenerCancelled() &&
-					ThreadHelper.isActivityVisible()) {
+			while (ThreadHelper.isActivityVisible()) {
 				final android.os.Message response =
 	        			android.os.Message.obtain();
 				response.arg1 = ROSTER;
-				if (th.D) Log.e(TAG, "Sending results!");
+				if (th.D) Log.e(TAG, "Sending roster results!");
 	            sendUpdate(response);
 	            try {
 					Thread.sleep(ThreadHelper.REFRESH_USER_LIST);

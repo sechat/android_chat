@@ -17,6 +17,7 @@ package de.zauberstuhl.encoapp;
  */
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 
@@ -30,7 +31,9 @@ import de.zauberstuhl.encoapp.classes.Contact;
 import de.zauberstuhl.encoapp.classes.User;
 import de.zauberstuhl.encoapp.services.Listener;
 import android.app.Activity;
+import android.app.AlarmManager;
 import android.app.AlertDialog;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -160,7 +163,11 @@ public class Main extends Activity {
             Messenger messenger = new Messenger(ListenerHandler);
             service.putExtra("MESSENGER", messenger);
             isBound = bindService(service, th.conn, Context.BIND_AUTO_CREATE);
-        	startService(service);
+            
+            Calendar cal = Calendar.getInstance();
+            PendingIntent pending = PendingIntent.getService(this, 0, service, PendingIntent.FLAG_CANCEL_CURRENT);
+            AlarmManager alarm = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
+            alarm.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), ThreadHelper.REPEAT_TIME, pending);
     	} else register();
     	db.close();
     }
