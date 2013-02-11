@@ -54,7 +54,6 @@ import android.widget.ViewFlipper;
 
 public class Main extends Activity {
 	
-	private static Encryption encryption = new Encryption();
 	private static ThreadHelper th = new ThreadHelper();
 	private static String TAG = th.appName+"Main";
 	
@@ -303,7 +302,6 @@ public class Main extends Activity {
     				if (th.D) Log.e(TAG, "Received user message!");
     				if (!roster.contains(user))
     					new AddContact(Main.this).execute(user);
-    				msg = encryption.decrypt(db.getPrivateKey(0), msg);
 	    			th.addDiscussionEntry(user, msg, false);
 	    			th.updateChat(Main.this);
     			}

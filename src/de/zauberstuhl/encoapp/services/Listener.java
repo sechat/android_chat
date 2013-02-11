@@ -32,6 +32,8 @@ import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smack.packet.Presence;
 import org.jivesoftware.smack.provider.ProviderManager;
+
+import de.zauberstuhl.encoapp.Encryption;
 import de.zauberstuhl.encoapp.Main;
 import de.zauberstuhl.encoapp.R;
 import de.zauberstuhl.encoapp.ThreadHelper;
@@ -160,20 +162,24 @@ public class Listener extends Service {
 	            if (packet instanceof Message) {
 	                Message message = (Message) packet;
 	                if (message != null && message.getBody() != null) {
+	                	DataBaseAdapter db = new DataBaseAdapter(getBaseContext());
+	            		Encryption e = new Encryption();
+	            		
 	                    response.arg1 = Activity.RESULT_OK;
 	                    String user = packet.getFrom();
 	                    String msg = message.getBody();
+	            		msg = e.decrypt(db.getPrivateKey(0), msg);
 	                    
 	                    user = user.replaceAll("^(.*?)\\/.*$", "$1"); 
 						bundle.putString(ID, user);
 						
-						Log.e(TAG, "Debugger: "+msg);
-						
+						if (th.D) Log.e(TAG, "Debugger: "+msg);
 						if (msg.startsWith("((PUBLICKEY))")) {
 							response.arg2 = PUBKEY;
 							msg = msg.substring(13, msg.length());
 						} else sendNotification(user, msg);
 						bundle.putString(MESSAGE, msg);
+						db.close();
 	                }
 	            }
 	            response.setData(bundle);
