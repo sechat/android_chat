@@ -1,7 +1,7 @@
 package de.zauberstuhl.encoapp.adapter;
 
 /**
- * Copyright (C) 2012 Lukas Matt <lukas@zauberstuhl.de>
+ * Copyright (C) 2013 Lukas Matt <lukas@zauberstuhl.de>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,9 +19,9 @@ package de.zauberstuhl.encoapp.adapter;
 import java.io.IOException; 
 import java.util.ArrayList;
 
+import de.zauberstuhl.encoapp.Contact;
 import de.zauberstuhl.encoapp.ThreadHelper;
-import de.zauberstuhl.encoapp.classes.Contact;
-import de.zauberstuhl.encoapp.classes.User;
+import de.zauberstuhl.encoapp.User;
 import de.zauberstuhl.encoapp.sql.DataBaseHelper;
 
 import android.content.ContentValues;

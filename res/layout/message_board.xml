@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical" >
+    
+		<RelativeLayout
+		    android:layout_width="match_parent"
+		    android:layout_height="wrap_content" >
+
+		    <ListView
+		        android:id="@+id/msgBoard"
+		        android:layout_width="fill_parent"
+		        android:layout_height="wrap_content"
+		        android:layout_above="@+id/msgTextField"
+		        android:layout_alignParentLeft="true"
+		        android:layout_alignParentRight="true"
+		        android:layout_alignParentTop="true"
+		        android:layout_gravity="fill_vertical"
+		        android:scrollbars="vertical" >
+
+		    </ListView>
+
+		    <EditText
+		        android:id="@+id/msgTextField"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:layout_alignParentBottom="true"
+		        android:layout_alignParentLeft="true"
+		        android:layout_toLeftOf="@+id/sendButton"
+		        android:ems="10"
+		        android:gravity="bottom|left"
+		        android:maxLines="1"
+		        android:minLines="1" />
+
+		    <Button
+		        android:id="@+id/sendButton"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:layout_alignParentBottom="true"
+		        android:layout_alignParentRight="true"
+		        android:gravity="center|center_vertical"
+		        android:minLines="1"
+		        android:onClick="send"
+		        android:text="Send" />
+
+		</RelativeLayout>
+
+</LinearLayout>

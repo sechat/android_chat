@@ -22,14 +22,12 @@
         android:textStyle="bold" />
 
     <TextView
-        android:id="@+id/userFingerprint"
+        android:id="@+id/lastActivity"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignLeft="@+id/userTitle"
         android:layout_alignParentBottom="true"
-        android:layout_alignParentRight="true"
         android:layout_below="@+id/userTitle"
-        android:text="@string/nopubkey"
         android:textColor="@color/grey"
         android:textSize="10dp" />
 

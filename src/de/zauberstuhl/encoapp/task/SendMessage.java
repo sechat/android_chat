@@ -1,7 +1,7 @@
-package de.zauberstuhl.encoapp;
+package de.zauberstuhl.encoapp.task;
 
 /**
- * Copyright (C) 2012 Lukas Matt <lukas@zauberstuhl.de>
+ * Copyright (C) 2013 Lukas Matt <lukas@zauberstuhl.de>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,9 +20,14 @@ import org.jivesoftware.smack.Chat;
 import org.jivesoftware.smack.ChatManager;
 import org.jivesoftware.smack.Roster;
 import org.jivesoftware.smack.XMPPException;
+import org.jivesoftware.smackx.packet.VCard;
 
+import de.zauberstuhl.encoapp.Encryption;
+import de.zauberstuhl.encoapp.ThreadHelper;
 import de.zauberstuhl.encoapp.adapter.DataBaseAdapter;
+import android.app.Activity;
 import android.os.AsyncTask;
+import android.util.Log;
 import android.widget.Toast;
 
 public class SendMessage extends AsyncTask<String, String, String> {
@@ -30,32 +35,40 @@ public class SendMessage extends AsyncTask<String, String, String> {
 	private static ThreadHelper th = new ThreadHelper();
 	private static Encryption encryption = new Encryption();
 	
-	Main main;
+	Activity act;
 	DataBaseAdapter db;
+	String TAG = getClass().getName();
 	
-	public SendMessage(Main main) {
-		this.main = main;
-		this.db = new DataBaseAdapter(main);
+	public SendMessage(Activity act) {
+		this.act = act;
+		this.db = new DataBaseAdapter(act);
 	}
 	
 	@Override
 	protected String doInBackground(String... params) {
 		if (ThreadHelper.xmppConnection != null ||
     			ThreadHelper.xmppConnection.isAuthenticated()) {
+			VCard vCard = new VCard();
 			String user = th.getActiveChatUser();
-			if (db.getPublicKey(user) == null)
+			try {
+				vCard.load(ThreadHelper.xmppConnection, user);
+			} catch (XMPPException e) {
 				return "Sending failed! Missing public key for user. Please try again later...";
+			}
 			Roster roster = ThreadHelper.xmppConnection.getRoster();
     		ChatManager chatmanager = ThreadHelper.xmppConnection.getChatManager();
     		Chat newChat = chatmanager.createChat(user, null);
     		try {
-    			th.addDiscussionEntry(user, params[0], true);
     			String encMsg = encryption.encrypt(
-    					db.getPublicKey(user), params[0]);
+    					vCard.getField("pubkey"), params[0]);
     			newChat.sendMessage(encMsg);
-    			th.updateChat(main);
+    			th.addDiscussionEntry(act, user, params[0], true);
     		} catch (XMPPException e) {
+    			if (th.D) Log.d(TAG, e.getMessage(), e);
     			return "Sending failed: "+e.getMessage();
+    		} catch (NullPointerException e) {
+    			if (th.D) Log.d(TAG, e.getMessage(), e);
+    			return "Cannot fetch public key from other user!";
     		}
     		if (!roster.getPresence(user).isAvailable())
     			return "User offline! The message will be delivered later.";
@@ -66,7 +79,7 @@ public class SendMessage extends AsyncTask<String, String, String> {
 	@Override
 	protected void onPostExecute(String result) {
 		if (result != null)
-			th.sendNotification(main, result, Toast.LENGTH_LONG);
+			th.sendNotification(act, result, Toast.LENGTH_LONG);
 		db.close();
 	}
 }

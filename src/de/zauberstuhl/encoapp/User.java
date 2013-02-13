@@ -1,7 +1,7 @@
-package de.zauberstuhl.encoapp.classes;
+package de.zauberstuhl.encoapp;
 
 /**
- * Copyright (C) 2012 Lukas Matt <lukas@zauberstuhl.de>
+ * Copyright (C) 2013 Lukas Matt <lukas@zauberstuhl.de>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,8 @@ package de.zauberstuhl.encoapp.classes;
 
 public class User {
 	public String jid;
-	public boolean online;
+	public String name = null;
+	public boolean online = false;
 	
     public User() {
         super();
@@ -27,12 +28,24 @@ public class User {
     public User(String jid) {
         super();
         this.jid = jid;
-        this.online = false;
+    }
+    
+    public User(String jid, String name) {
+        super();
+        this.jid = jid;
+        this.name = name;
     }
     
     public User(String jid, boolean online) {
         super();
         this.jid = jid;
+        this.online = online;
+    }
+    
+    public User(String jid, String name, boolean online) {
+        super();
+        this.jid = jid;
+        this.name = name;
         this.online = online;
     }
 }

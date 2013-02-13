@@ -1,7 +1,7 @@
 package de.zauberstuhl.encoapp;
 
 /**
- * Copyright (C) 2012 Lukas Matt <lukas@zauberstuhl.de>
+ * Copyright (C) 2013 Lukas Matt <lukas@zauberstuhl.de>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,12 +21,17 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 
 import org.jivesoftware.smack.Chat;
 import org.jivesoftware.smack.ChatManager;
+import org.jivesoftware.smack.ConnectionConfiguration;
+import org.jivesoftware.smack.Roster;
+import org.jivesoftware.smack.RosterEntry;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.provider.PrivacyProvider;
@@ -41,6 +46,7 @@ import org.jivesoftware.smackx.packet.LastActivity;
 import org.jivesoftware.smackx.packet.OfflineMessageInfo;
 import org.jivesoftware.smackx.packet.OfflineMessageRequest;
 import org.jivesoftware.smackx.packet.SharedGroupsInfo;
+import org.jivesoftware.smackx.packet.VCard;
 import org.jivesoftware.smackx.provider.AdHocCommandDataProvider;
 import org.jivesoftware.smackx.provider.DataFormProvider;
 import org.jivesoftware.smackx.provider.DelayInformationProvider;
@@ -57,16 +63,25 @@ import org.jivesoftware.smackx.provider.VCardProvider;
 import org.jivesoftware.smackx.provider.XHTMLExtensionProvider;
 import org.jivesoftware.smackx.search.UserSearch;
 
+import de.zauberstuhl.encoapp.activity.MessageBoard;
+import de.zauberstuhl.encoapp.activity.UserList;
 import de.zauberstuhl.encoapp.adapter.DataBaseAdapter;
+import android.app.Activity;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.IBinder;
 import android.os.Messenger;
 import android.util.Base64;
 import android.util.Log;
+import android.view.View;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -78,7 +93,7 @@ public class ThreadHelper {
 	
 	public final boolean D = true;
 	public final String appName = "3nc0App";
-	String TAG = appName+getClass().getName();
+	String TAG = getClass().getName();
 	public final String HOST = "connect.3nc0.de";
 	public final String IP = "188.40.178.248";
 	public final int PORT = 5222;
@@ -112,19 +127,64 @@ public class ThreadHelper {
 	/**
 	 * Service
 	 */
-	private static Thread listenerThread = null;
-	public void setListenerThread(Thread th) {
-		ThreadHelper.listenerThread = th;
-	}
-	public Thread getListenerThread() {
-		return ThreadHelper.listenerThread;
-	}
-	public static final int REPEAT_TIME = 1000 * 60;
-	public static final int REFRESH_USER_LIST = 1000 * 10;
+	public static final int REPEAT_TIME = 1000 * 10;
+	public static Thread listenerThread = null;
 	
 	/////////////////////////////////////////////////////
 	//	Starting some public function
 	/////////////////////////////////////////////////////
+	
+	/**
+	 * XMPP
+	 * @throws XMPPException 
+	 */
+	
+	public void xmppConnect() throws XMPPException {
+		if (!(ThreadHelper.xmppConnection == null) &&
+				ThreadHelper.xmppConnection.isConnected()) return;
+		// Set configuration parameter
+		Roster.setDefaultSubscriptionMode(Roster.SubscriptionMode.manual);
+		ConnectionConfiguration config = new ConnectionConfiguration(HOST, PORT);
+		config.setSASLAuthenticationEnabled(false);
+		configure(ProviderManager.getInstance());
+		ThreadHelper.xmppConnection = new XMPPConnection(config);
+		ThreadHelper.xmppConnection.connect();
+	}
+
+	public boolean xmppLogin(Context context) {
+		if (ThreadHelper.xmppConnection == null)
+			return false;
+		if (ThreadHelper.xmppConnection.isAuthenticated())
+			return true;
+		
+		DataBaseAdapter db = new DataBaseAdapter(context);
+		ThreadHelper.ACCOUNT_NAME = db.getContactName(0);
+		ThreadHelper.ACCOUNT_PASSWORD = db.getContactPassword();
+		db.close();
+		
+		try {
+			ThreadHelper.xmppConnection.login(
+					ThreadHelper.ACCOUNT_NAME, ThreadHelper.ACCOUNT_PASSWORD);
+		} catch (XMPPException e) {
+			Log.e(TAG, e.getMessage(), e);
+			return false;
+		}
+		if (ThreadHelper.xmppConnection.isAuthenticated())
+			return true;
+		return false;
+	}
+	
+	public boolean xmppConnectAndLogin(Context context) {
+		try {
+			xmppConnect();
+		} catch (XMPPException e) {
+			Log.e(TAG, e.getMessage(), e);
+			return false;
+		}
+		if (xmppLogin(context))
+			return true;
+		return false;
+	}
 	
 	/**
 	 * Send your public key
@@ -151,9 +211,42 @@ public class ThreadHelper {
 	}
 	
 	/**
+	 * Send notification to status bar
+	 * 
+	 * @param Context
+	 * @param NotificationManager
+	 * @param Notification
+	 * @param CharSequence Title
+	 * @param CharSequence Text
+	 * @return void
+	 */
+	public void sendNotification(Context context, NotificationManager mNotificationManager,
+			Notification notifyDetails, CharSequence contentTitle, CharSequence contentText) {	
+		Intent notify = new Intent(context, MessageBoard.class);
+		notify.putExtra("activeChatUser", contentTitle);
+		//notify.setAction(Intent.ACTION_MAIN);
+		//notify.addCategory(Intent.CATEGORY_LAUNCHER);
+
+		PendingIntent intent = PendingIntent.getActivity(context, 0,
+				notify, android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+		notifyDetails.setLatestEventInfo(context, contentTitle, contentText, intent);
+		notifyDetails.flags |= Notification.FLAG_AUTO_CANCEL;
+		// vibrate on new notification
+		notifyDetails.defaults |= Notification.DEFAULT_VIBRATE;
+		notifyDetails.vibrate = new long[]{100, 200, 100, 500};
+		// and turn on the status LED
+		notifyDetails.flags |= Notification.FLAG_SHOW_LIGHTS;
+		notifyDetails.ledARGB = Color.GREEN;
+		notifyDetails.ledOffMS = 300;
+		notifyDetails.ledOnMS = 300;
+
+		mNotificationManager.notify(0, notifyDetails);
+    }
+	
+	/**
 	 * Add a new chat message to the active chat
 	 */
-	public void addDiscussionEntry(String user, String message, Boolean me) {
+	public void addDiscussionEntry(Activity act, String user, String message, Boolean me) {
         Date date = new Date();
         String hours = String.valueOf(date.getHours());
         String minutes = String.valueOf(date.getMinutes());
@@ -167,6 +260,24 @@ public class ThreadHelper {
 		map.put(ident, message);
 		ThreadHelper.userDiscussion.put(user, map);
 		if (D) Log.e(TAG, "Added new discussion entry to "+user);
+		updateDiscussion(act);
+	}
+	
+	public void updateDiscussion(Activity act) {
+		if (getActiveChatUser() == null) return;
+		act.runOnUiThread(new Runnable(){
+			@Override
+			public void run() {
+				LinkedHashMap<String, String> chatLog;
+				if (getUserDiscussion(getActiveChatUser()) == null)
+					chatLog = new LinkedHashMap<String, String>();
+				else chatLog = getUserDiscussion(getActiveChatUser());
+				MessageBoard.listItems.clear();
+				MessageBoard.listItems.putAll(chatLog);
+				MessageBoard.msgAdapter.notifyDataSetChanged();
+				MessageBoard.msgBoard.setTranscriptMode(ListView.TRANSCRIPT_MODE_ALWAYS_SCROLL);
+			}
+		});
 	}
 	
 	public static boolean isActivityVisible() {
@@ -253,19 +364,55 @@ public class ThreadHelper {
 	    return false;
 	}
     
-	public void updateChat(final Main main) {
-		main.runOnUiThread(new Runnable(){
+	public void updateUserList(Activity act, User user) {
+		if (!ThreadHelper.xmppConnection.isAuthenticated()) {
+			if (D) Log.d(TAG, "XMPP connection is not authenticated!");
+			return;
+		}
+		if (UserList.listItems.contains(user)) {
+			if (D) Log.d(TAG, "Update userlist failed! User already in list.");
+			return;
+		}
+		ArrayList<User> list = new ArrayList<User>();;
+		if (!UserList.listItems.isEmpty())
+			list.addAll(UserList.listItems);
+		list.add(user);
+    	updateUserList(act, list);
+	}
+	
+	public void updateUserList(Activity act) throws XMPPException {
+		if (!ThreadHelper.xmppConnection.isAuthenticated()) {
+			if (D) Log.d(TAG, "XMPP connection is not authenticated!");
+			return;
+		}
+		ArrayList<User> list = new ArrayList<User>();
+		Roster roster = ThreadHelper.xmppConnection.getRoster();
+    	Iterator<RosterEntry> cit = roster.getEntries().iterator();
+    	while(cit.hasNext()) {
+    		RosterEntry entry = cit.next();
+    		VCard vCard = new VCard();
+    		vCard.load(ThreadHelper.xmppConnection, entry.getUser());
+    		list.add(new User(entry.getUser(), vCard.getNickName(),
+    				roster.getPresence(entry.getUser()).isAvailable()));
+    	}
+    	updateUserList(act, list);
+	}
+	
+	private void updateUserList(Activity act, final ArrayList<User> list) {
+		act.runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				if (getActiveChatUser() == null) return;
-				LinkedHashMap<String, String> chatLog =
-					getUserDiscussion(getActiveChatUser());
-				if (chatLog == null) chatLog = new LinkedHashMap<String, String>();
-				
-				main.msgListItems.clear();
-				main.msgListItems.putAll(chatLog);
-				main.msgAdapter.notifyDataSetChanged();
-				main.msgBoard.setTranscriptMode(ListView.TRANSCRIPT_MODE_ALWAYS_SCROLL);
+				Integer setTo;
+				UserList.listItems.clear();
+				UserList.listItems.addAll(list);
+				UserList.adapter.notifyDataSetChanged();
+				if (D) Log.d(TAG, "User-list notify data set changed!");
+				if (UserList.listItems.size() > 0)
+					setTo = View.GONE;
+				else setTo = View.VISIBLE;
+				UserList.contactInfoBox.setVisibility(setTo);
+				UserList.addAuto.setVisibility(setTo);
+				UserList.addManual.setVisibility(setTo);
 			}
 		});
 	}

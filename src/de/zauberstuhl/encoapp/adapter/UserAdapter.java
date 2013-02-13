@@ -1,7 +1,7 @@
 package de.zauberstuhl.encoapp.adapter;
 
 /**
- * Copyright (C) 2012 Lukas Matt <lukas@zauberstuhl.de>
+ * Copyright (C) 2013 Lukas Matt <lukas@zauberstuhl.de>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,14 +21,18 @@ import java.util.ArrayList;
 import org.jivesoftware.smack.Roster;
 import org.jivesoftware.smack.RosterEntry;
 import org.jivesoftware.smack.XMPPException;
+import org.jivesoftware.smackx.LastActivityManager;
+import org.jivesoftware.smackx.packet.LastActivity;
 
-import de.zauberstuhl.encoapp.Main;
 import de.zauberstuhl.encoapp.R;
 import de.zauberstuhl.encoapp.ThreadHelper;
-import de.zauberstuhl.encoapp.classes.User;
+import de.zauberstuhl.encoapp.User;
+import de.zauberstuhl.encoapp.activity.MessageBoard;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -43,16 +47,24 @@ import android.widget.TextView;
 public class UserAdapter extends BaseAdapter {
 
 	private static ThreadHelper th = new ThreadHelper();
-	private String TAG = th.appName+getClass().getName();
 	
-	private Main main;
-    private ArrayList<User> data;
-    private static LayoutInflater inflater = null;
+	String TAG = getClass().getName();
+	Activity act;
+	Context context;
+    ArrayList<User> data;
+    static LayoutInflater inflater = null;
     
-    public UserAdapter(Main main, ArrayList<User> data) {
-    	this.main = main;
+    public UserAdapter(Activity act, ArrayList<User> data) {
+    	this.act = act;
+    	/**
+    	 * There is a bug in several Android versions,
+    	 * which returns null if you call getBaseContext from a Activity
+    	 * This problem exists only for the AlertDialog function
+    	 */
+    	this.context = act; // workaround for AlertDialog
         this.data = data;
-        inflater = (LayoutInflater)main.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        inflater = (LayoutInflater) act.getBaseContext().getSystemService(
+        		Context.LAYOUT_INFLATER_SERVICE);
     }
 
 	@Override
@@ -79,21 +91,18 @@ public class UserAdapter extends BaseAdapter {
         RelativeLayout list = (RelativeLayout)vi.findViewById(R.id.userList);
         TextView text = (TextView)vi.findViewById(R.id.userTitle);
         ImageView status = (ImageView)vi.findViewById(R.id.userStatus);
-        TextView fingerPrint = (TextView)vi.findViewById(R.id.userFingerprint);
+        TextView lastActivity = (TextView)vi.findViewById(R.id.lastActivity);
         
-        final DataBaseAdapter db = new DataBaseAdapter(main);
         final User user = data.get(position);
         list.setOnClickListener(new OnClickListener() {
         	@Override
     		public void onClick(View arg0) {
     			String keyName = user.jid;
     			if (th.D) Log.e(TAG, "Switch to user chat: "+keyName);
-    			main.setTitle(keyName);
     			th.setActiveChatUser(keyName);
-    			notifyDataSetChanged();
     			// switch to the message board
-    			main.viewFlipper.showNext();
-    			th.updateChat(main);
+    			Intent intent = new Intent(context, MessageBoard.class);
+    			context.startActivity(intent);
     		}
         });
         list.setOnLongClickListener(new OnLongClickListener() {
@@ -110,17 +119,17 @@ public class UserAdapter extends BaseAdapter {
 									RosterEntry entry = roster.getEntry(user.jid);
 									try {
 										roster.removeEntry(entry);
+										th.updateUserList(act);
 									} catch (XMPPException e) {
-										if (th.D) Log.e(TAG, "Failed removing user from roster!", e);
+										Log.e(TAG, "Failed removing user from roster!", e);
 									}
-									db.deleteEntry(user.jid);
 								}
 					        }
 					    }
 					};
 					
-					AlertDialog.Builder builder = new AlertDialog.Builder(main);
-					builder.setMessage("Do you want to remove the user?")
+					AlertDialog.Builder builder = new AlertDialog.Builder(context);
+					builder.setMessage("Do you want to remove '" + user.jid + "'?")
 						.setPositiveButton("Yes", dialogClickListener)
 						.setNegativeButton("No", dialogClickListener).show();
 				}
@@ -130,14 +139,17 @@ public class UserAdapter extends BaseAdapter {
         
         if (user.online) status.setImageResource(R.drawable.online_icon);
         else status.setImageResource(R.drawable.offline_icon);
-        text.setText(user.jid);
+        if (user.name != null)
+        	text.setText(user.name);
+        else text.setText(user.jid);
         
-        // set fingerprint
-        String fp = null;
-        if ((fp = db.getPublicKey(user.jid)) != null)
-        	fingerPrint.setText(th.getMd5Sum(fp));
-        else fingerPrint.setText(main.getString(R.string.nopubkey));
-        db.close();
+        try {
+			LastActivity activty = LastActivityManager.getLastActivity(
+					ThreadHelper.xmppConnection, user.jid);
+			lastActivity.setText("Idle since "+activty.lastActivity+" minutes");
+		} catch (XMPPException e) {
+			if (th.D) Log.e(TAG, e.getMessage(), e);
+		}
         return vi;
     }
 }

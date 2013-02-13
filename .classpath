@@ -6,5 +6,6 @@
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
         <classpathentry kind="lib" path="libs/smack.jar"/>
         <classpathentry kind="lib" path="libs/smackx.jar"/>
+        <classpathentry kind="lib" path="libs/libphonenumber-5.3.jar"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>
