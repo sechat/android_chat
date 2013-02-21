@@ -146,7 +146,13 @@ public class UserAdapter extends BaseAdapter {
         try {
 			LastActivity activty = LastActivityManager.getLastActivity(
 					ThreadHelper.xmppConnection, user.jid);
-			lastActivity.setText("Idle since "+activty.lastActivity+" minutes");
+			String result;
+			if (activty.lastActivity > 3600)
+				result = (activty.lastActivity / 3600) + " hours";
+			else if (activty.lastActivity > 60)
+				result = (activty.lastActivity / 60) + " minutes";
+			else result = activty.lastActivity + " seconds";
+			lastActivity.setText("Idle since " + result);
 		} catch (XMPPException e) {
 			if (th.D) Log.e(TAG, e.getMessage(), e);
 		}

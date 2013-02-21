@@ -123,7 +123,7 @@ public class Register extends AsyncTask<Void, Integer, String> {
 		} catch (XMPPException e) {
 			Log.e(TAG, e.getMessage(), e);
 		}
-		if (isChecked) new SearchContact(act).execute();
+		if (isChecked) new SearchContacts(act).execute();
 		return null;
 	}
 

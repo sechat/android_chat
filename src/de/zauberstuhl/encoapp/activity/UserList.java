@@ -33,11 +33,14 @@ import de.zauberstuhl.encoapp.adapter.UserAdapter;
 import de.zauberstuhl.encoapp.services.Listener;
 import de.zauberstuhl.encoapp.services.ListenerHandler;
 import de.zauberstuhl.encoapp.services.SubscriptionHandler;
-import de.zauberstuhl.encoapp.task.SearchContact;
+import de.zauberstuhl.encoapp.task.AddContacts;
+import de.zauberstuhl.encoapp.task.SearchContacts;
 import android.app.Activity;
 import android.app.AlarmManager;
+import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Messenger;
@@ -48,6 +51,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -153,9 +157,21 @@ public class UserList extends Activity {
 		});
 	}
 	
-	public void search(View v) {
-		addAuto.setEnabled(false);
-		new SearchContact(this).execute();
+	public void addContact(View v) {
+		final EditText input = new EditText(this);
+		new AlertDialog.Builder(this)
+	    .setTitle("Add contact")
+	    .setMessage("Type the phone number you want to add into the text field!\n\n"+
+	    			"e.g.: 12345678, 87654321")
+	    .setView(input)
+	    .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+	        public void onClick(DialogInterface dialog, int whichButton) {
+	        	String[] numbers = input.getText().toString().split(",");
+	        	new AddContacts(UserList.this).execute(numbers);
+	        }
+	    }).setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+	        public void onClick(DialogInterface dialog, int whichButton) {}
+	    }).show();
 	}
 	
     @Override
@@ -178,8 +194,13 @@ public class UserList extends Activity {
     
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-    	if(item.getItemId() == R.id.searchContacts) {
-    		new SearchContact(this).execute();
+    	if (item.getItemId() == R.id.searchContacts) {
+    		new SearchContacts(this).execute();
+    		return true;
+    	}
+    	if (item.getItemId() == R.id.addContact) {
+    		View v = new View(getBaseContext());
+    		addContact(v);
     		return true;
     	}
     	return false;
