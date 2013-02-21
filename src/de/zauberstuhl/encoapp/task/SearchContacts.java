@@ -31,22 +31,20 @@ public class SearchContacts extends AsyncTask<Void, Void, String[]> {
 	
 	@Override
 	protected String[] doInBackground(Void... params) {
-		String[] results = {};
+		String results = "";
 		Cursor c = act.getContentResolver().query(
 				Phone.CONTENT_URI,
 				new String[]{Phone.NUMBER, Phone.DISPLAY_NAME},
 				null, null, null);
 		
 		if (c != null) {
-			int i = 0;
 			while(c.moveToNext()) {
 				String number = c.getString(c.getColumnIndex(Phone.NUMBER));
 				//String name = c.getString(c.getColumnIndex(Phone.DISPLAY_NAME));
-				results[i] = number;
-				i++;
+				results += number + ",";
 			}
 		}
-		return results;
+		return results.split(",");
 	}
 	
 	@Override
