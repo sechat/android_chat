@@ -19,7 +19,6 @@ package de.zauberstuhl.encoapp.activity;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Iterator;
-
 import org.jivesoftware.smack.Roster;
 import org.jivesoftware.smack.RosterEntry;
 import org.jivesoftware.smack.filter.PacketFilter;
@@ -33,14 +32,12 @@ import de.zauberstuhl.encoapp.adapter.UserAdapter;
 import de.zauberstuhl.encoapp.services.Listener;
 import de.zauberstuhl.encoapp.services.ListenerHandler;
 import de.zauberstuhl.encoapp.services.SubscriptionHandler;
-import de.zauberstuhl.encoapp.task.AddContacts;
+import de.zauberstuhl.encoapp.task.AddManualContacts;
 import de.zauberstuhl.encoapp.task.SearchContacts;
 import android.app.Activity;
 import android.app.AlarmManager;
-import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Messenger;
@@ -51,7 +48,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -158,20 +154,7 @@ public class UserList extends Activity {
 	}
 	
 	public void addContact(View v) {
-		final EditText input = new EditText(this);
-		new AlertDialog.Builder(this)
-	    .setTitle("Add contact")
-	    .setMessage("Type the phone number you want to add into the text field!\n\n"+
-	    			"e.g.: 12345678, 87654321")
-	    .setView(input)
-	    .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-	        public void onClick(DialogInterface dialog, int whichButton) {
-	        	String[] numbers = input.getText().toString().split(",");
-	        	new AddContacts(UserList.this).execute(numbers);
-	        }
-	    }).setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-	        public void onClick(DialogInterface dialog, int whichButton) {}
-	    }).show();
+		new AddManualContacts(this).execute();
 	}
 	
     @Override

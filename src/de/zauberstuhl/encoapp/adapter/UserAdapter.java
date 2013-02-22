@@ -154,7 +154,7 @@ public class UserAdapter extends BaseAdapter {
 			else result = activty.lastActivity + " seconds";
 			lastActivity.setText("Idle since " + result);
 		} catch (XMPPException e) {
-			if (th.D) Log.e(TAG, e.getMessage(), e);
+			if (th.D) Log.e(TAG, e.getMessage());
 		}
         return vi;
     }

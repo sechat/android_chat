@@ -23,5 +23,6 @@
         <item>connect.3nc0.de</item>
     </string-array>
     <string name="get_phone_number_hint">Please enter your phone number so that friends can find you!</string>
+    <string name="add_contact_description">Type the phone number you want to add into the text field!\n\ne.g.: 12345678, 87654321</string>
     
 </resources>

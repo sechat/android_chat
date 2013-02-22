@@ -17,8 +17,6 @@ package de.zauberstuhl.encoapp.services;
  */
 
 import org.jivesoftware.smack.Roster;
-import org.jivesoftware.smack.XMPPException;
-
 import de.zauberstuhl.encoapp.ThreadHelper;
 import android.app.Activity;
 import android.os.Bundle;

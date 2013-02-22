@@ -44,10 +44,16 @@ public class AddContacts extends AsyncTask<String, Void, Integer> {
 	private static ThreadHelper th = new ThreadHelper();
 	
 	Activity act;
+	String region = null;
 	String TAG = this.getClass().getName();
 	
 	public AddContacts(Activity act) {
 		this.act = act;
+	}
+	
+	public AddContacts(Activity act, String region) {
+		this.act = act;
+		this.region = region;
 	}
 	
 	@Override
@@ -55,16 +61,17 @@ public class AddContacts extends AsyncTask<String, Void, Integer> {
 		Integer newCnt = 0;
 		TelephonyManager manager =
 			(TelephonyManager) act.getSystemService(Context.TELEPHONY_SERVICE);
-		String countryIso = manager.getSimCountryIso();
+		if (region == null)
+			region = manager.getSimCountryIso();
 		
 		for (String number: numbers) {
 			if (th.D) Log.d(TAG, "Found number " + number + ". Try to parse it");
 			PhoneNumberUtil phoneUtil = PhoneNumberUtil.getInstance();
 			try {
 				PhoneNumber phoneNumber = phoneUtil.parse(number,
-						countryIso.toUpperCase(Locale.getDefault()));
+						region.toUpperCase(Locale.getDefault()));
 				if (th.D) Log.d(TAG, "Number successfully parsed!");
-				String identifier = countryIso.toLowerCase(Locale.getDefault()) +
+				String identifier = region.toLowerCase(Locale.getDefault()) +
 									phoneNumber.getNationalNumber();
 				String jid = identifier + "@" + th.HOST;
 				if (th.D) Log.d(TAG, jid);
