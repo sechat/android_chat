@@ -22,5 +22,6 @@
     <string-array name="server_list">
         <item>connect.3nc0.de</item>
     </string-array>
+    <string name="get_phone_number_hint">Please enter your phone number so that friends can find you!</string>
     
 </resources>

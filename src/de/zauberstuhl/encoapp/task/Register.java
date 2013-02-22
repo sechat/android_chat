@@ -49,15 +49,14 @@ public class Register extends AsyncTask<Void, Integer, String> {
 	private static Encryption encryption = new Encryption();
 
 	Activity act;
-	String nickName;
-	String password;
-	String identifier;
+	String nickName, password, identifier, phoneNumber;
 	Boolean isChecked;
 
-	public Register(Activity act, String nickName, Boolean isChecked) {
+	public Register(Activity act, String nickName, String phoneNumber, Boolean isChecked) {
 		this.act = act;
 		this.nickName = nickName;
 		this.isChecked = isChecked;
+		this.phoneNumber = phoneNumber;
 	}
 
 	@Override
@@ -65,12 +64,14 @@ public class Register extends AsyncTask<Void, Integer, String> {
 		TelephonyManager manager =
 			(TelephonyManager) act.getSystemService(Context.TELEPHONY_SERVICE);
 		PhoneNumberUtil phoneUtil = PhoneNumberUtil.getInstance();
+		
 		try {
-			PhoneNumber phoneNumber = phoneUtil.parse(manager.getLine1Number(),
-					manager.getSimCountryIso().toUpperCase(Locale.getDefault()));
+			PhoneNumber phoneNumber = phoneUtil.parse(
+					this.phoneNumber, manager.getSimCountryIso().toUpperCase(Locale.getDefault()));
 			identifier = manager.getSimCountryIso() + phoneNumber.getNationalNumber();
-		} catch (NumberParseException e1) {
-			return "Cannot extract phone number!";
+		} catch (NumberParseException e) {
+			Log.e(TAG, e.getMessage(), e);
+			return "Please specify a correct phone number!";
 		}
 		
 		if (nickName.length() == 0)
