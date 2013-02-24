@@ -45,7 +45,6 @@ public class Listener extends Service {
 	
 	public static boolean listenerRunning = true;
 	public static final String ROSTER = "roster";
-	public static final String SUBSCRIPTION = "subscription";
 	public static final String ID = "id";
 	public static final String MESSAGE = "message";
 	
@@ -82,9 +81,6 @@ public class Listener extends Service {
 				ThreadHelper.listenerThread.start();
 			} else if (th.D) Log.d(TAG, "ListenerThread already started");
 		}
-		android.os.Message response = android.os.Message.obtain();
-		response.obj = SUBSCRIPTION;
-		sendResponse(response);
 		return Service.START_STICKY;
 	}
 	

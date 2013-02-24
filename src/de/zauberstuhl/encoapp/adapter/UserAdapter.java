@@ -119,10 +119,10 @@ public class UserAdapter extends BaseAdapter {
 									RosterEntry entry = roster.getEntry(user.jid);
 									try {
 										roster.removeEntry(entry);
-										th.updateUserList(act);
 									} catch (XMPPException e) {
 										Log.e(TAG, "Failed removing user from roster!", e);
 									}
+									th.updateUserList(act);
 								}
 					        }
 					    }
