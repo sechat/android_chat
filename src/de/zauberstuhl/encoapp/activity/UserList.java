@@ -40,6 +40,7 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Messenger;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -65,6 +66,15 @@ public class UserList extends Activity {
 	public static Button addManual;
 	public static Button addAuto;
 	
+    Handler handler = new Handler();
+	Runnable updateUserList = new Runnable() {
+		@Override
+		public void run() {
+			th.updateUserList(UserList.this);
+			handler.postDelayed(this, ThreadHelper.USERLIST_REPEAT_TIME);
+		}
+	};
+	
     @Override
     public synchronized void onResume() {
         super.onResume();
@@ -76,6 +86,7 @@ public class UserList extends Activity {
             service.putExtra("MESSENGER", messenger);
             isBound = bindService(service, th.conn, Context.BIND_AUTO_CREATE);
         }
+        handler.post(updateUserList);
     }
     
     @Override
@@ -87,6 +98,7 @@ public class UserList extends Activity {
         	unbindService(th.conn);
         	isBound = false;
         }
+        handler.removeCallbacks(updateUserList);
     }
 	
 	@Override

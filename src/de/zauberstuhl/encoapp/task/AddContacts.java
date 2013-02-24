@@ -93,12 +93,7 @@ public class AddContacts extends AsyncTask<String, Void, Integer> {
 				Log.e(TAG, "No regular phone number. Cannot use it!");
 			}
 		}
-		
-		try {
-			th.updateUserList(act);
-		} catch (XMPPException e) {
-			Log.e(TAG, e.getMessage(), e);
-		}
+		th.updateUserList(act);
 		return newCnt;
 	}
 	

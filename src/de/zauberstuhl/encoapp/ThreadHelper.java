@@ -127,7 +127,8 @@ public class ThreadHelper {
 	/**
 	 * Service
 	 */
-	public static final int REPEAT_TIME = 1000 * 10;
+	public static final int REPEAT_TIME = 1000 * 360;
+	public static final int USERLIST_REPEAT_TIME = 1000 * 10;
 	public static Thread listenerThread = null;
 	
 	/////////////////////////////////////////////////////
@@ -380,7 +381,7 @@ public class ThreadHelper {
     	updateUserList(act, list);
 	}
 	
-	public void updateUserList(Activity act) throws XMPPException {
+	public void updateUserList(Activity act) {
 		if (!ThreadHelper.xmppConnection.isAuthenticated()) {
 			if (D) Log.d(TAG, "XMPP connection is not authenticated!");
 			return;
@@ -391,7 +392,11 @@ public class ThreadHelper {
     	while(cit.hasNext()) {
     		RosterEntry entry = cit.next();
     		VCard vCard = new VCard();
-    		vCard.load(ThreadHelper.xmppConnection, entry.getUser());
+    		try {
+				vCard.load(ThreadHelper.xmppConnection, entry.getUser());
+			} catch (XMPPException e) {
+				Log.e(TAG, e.getMessage(), e);
+			}
     		list.add(new User(entry.getUser(), vCard.getNickName(),
     				roster.getPresence(entry.getUser()).isAvailable()));
     	}

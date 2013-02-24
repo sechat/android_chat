@@ -17,8 +17,6 @@ package de.zauberstuhl.encoapp.services;
  */
 
 import org.jivesoftware.smack.Roster;
-import org.jivesoftware.smack.XMPPException;
-
 import de.zauberstuhl.encoapp.ThreadHelper;
 import android.app.Activity;
 import android.os.Bundle;
@@ -53,12 +51,6 @@ public class ListenerHandler extends Handler {
 			} else {
 				th.addDiscussionEntry(act, user, msg, false);
 	    	}
-		} else if (request.equals(Listener.ROSTER) || request.equals(Listener.SUBSCRIPTION)) {
-			try {
-				th.updateUserList(act);
-			} catch (XMPPException e) {
-				Log.e(TAG, e.getMessage(), e);
-			}
 		}
 	}
 }
