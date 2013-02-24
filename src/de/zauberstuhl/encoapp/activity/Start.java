@@ -96,8 +96,10 @@ public class Start extends Activity {
 				intent = new Intent(Start.this, Setup.class);
 			}
 			
-			if (intent != null)
+			if (intent != null) {
+				intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
 				startActivity(intent);
+			}
 		}
 	};
 }

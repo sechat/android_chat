@@ -224,6 +224,7 @@ public class ThreadHelper {
 	public void sendNotification(Context context, NotificationManager mNotificationManager,
 			Notification notifyDetails, CharSequence contentTitle, CharSequence contentText) {	
 		Intent notify = new Intent(context, MessageBoard.class);
+		notify.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
 		notify.putExtra("activeChatUser", contentTitle);
 		//notify.setAction(Intent.ACTION_MAIN);
 		//notify.addCategory(Intent.CATEGORY_LAUNCHER);

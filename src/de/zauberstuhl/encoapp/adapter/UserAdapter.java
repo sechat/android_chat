@@ -102,6 +102,7 @@ public class UserAdapter extends BaseAdapter {
     			th.setActiveChatUser(keyName);
     			// switch to the message board
     			Intent intent = new Intent(context, MessageBoard.class);
+    			intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
     			context.startActivity(intent);
     		}
         });
