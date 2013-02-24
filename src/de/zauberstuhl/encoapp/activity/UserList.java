@@ -157,6 +157,10 @@ public class UserList extends Activity {
 		new AddManualContacts(this).execute();
 	}
 	
+	public void addContacts(View v) {
+		new SearchContacts(this).execute();
+	}
+	
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
     	if (keyCode == KeyEvent.KEYCODE_BACK) {
@@ -178,7 +182,8 @@ public class UserList extends Activity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
     	if (item.getItemId() == R.id.searchContacts) {
-    		new SearchContacts(this).execute();
+    		View v = new View(getBaseContext());
+    		addContacts(v);
     		return true;
     	}
     	if (item.getItemId() == R.id.addContact) {
