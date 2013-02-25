@@ -80,7 +80,6 @@ import android.os.Vibrator;
 import android.util.Base64;
 import android.util.Log;
 import android.view.View;
-import android.widget.ListView;
 import android.widget.Toast;
 
 public class ThreadHelper {
@@ -246,7 +245,6 @@ public class ThreadHelper {
 				MessageBoard.listItems.clear();
 				MessageBoard.listItems.addAll(discussions);
 				MessageBoard.msgAdapter.notifyDataSetChanged();
-				MessageBoard.msgBoard.setTranscriptMode(ListView.TRANSCRIPT_MODE_ALWAYS_SCROLL);
 			}
 		});
 	}

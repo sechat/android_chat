@@ -50,6 +50,12 @@ public class MessageBoard extends Activity {
     	setTitle(th.getActiveChatUser());
     	ThreadHelper.activityResumed();
     	th.updateDiscussion(this);
+    	// on resume scroll to bottom
+    	msgBoard.post(new Runnable(){
+    		public void run() {
+    			msgBoard.setSelection(msgBoard.getCount() - 1);
+    		}
+    	});
     }
     
     @Override
@@ -72,6 +78,7 @@ public class MessageBoard extends Activity {
         msgBoard = (ListView) findViewById(R.id.msgBoard);
         msgAdapter = new MessageAdapter(this, listItems);
         msgBoard.setAdapter(msgAdapter);
+        msgBoard.setTranscriptMode(ListView.TRANSCRIPT_MODE_ALWAYS_SCROLL);
         msgBoard.setDivider(null);
         
         Bundle extras = getIntent().getExtras();
