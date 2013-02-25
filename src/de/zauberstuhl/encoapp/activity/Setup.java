@@ -69,7 +69,8 @@ public class Setup extends Activity {
         
         TelephonyManager manager =
 			(TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-        if (manager.getLine1Number() == null) {
+        if (manager.getLine1Number() == null ||
+        		manager.getLine1Number().length() == 0) {
         	phoneNumberHint.setVisibility(View.VISIBLE);
         	phoneNumber.setVisibility(View.VISIBLE);
         } else phoneNumber.setText(manager.getLine1Number());
