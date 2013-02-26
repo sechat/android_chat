@@ -17,11 +17,12 @@ package de.zauberstuhl.encoapp.adapter;
  */
 
 import java.io.IOException; 
-import java.util.ArrayList;
+import java.sql.Timestamp;
+import java.util.LinkedList;
 
 import de.zauberstuhl.encoapp.Contact;
+import de.zauberstuhl.encoapp.Discussion;
 import de.zauberstuhl.encoapp.ThreadHelper;
-import de.zauberstuhl.encoapp.User;
 import de.zauberstuhl.encoapp.sql.DataBaseHelper;
 
 import android.content.ContentValues;
@@ -35,11 +36,12 @@ import android.util.Log;
 public class DataBaseAdapter { 
 	
 	private static ThreadHelper th = new ThreadHelper();
-	private static String TAG = th.appName+"DataBaseAdapter";
 	 
     private final Context mContext;
     private DataBaseHelper mDbHelper;
 	
+    String TAG = this.getClass().getName();
+    
     public DataBaseAdapter(Context context) {
         this.mContext = context; 
         mDbHelper = new DataBaseHelper(mContext);
@@ -50,9 +52,9 @@ public class DataBaseAdapter {
             mDbHelper.createDataBase();
             mDbHelper.openDataBase(); 
             mDbHelper.close(); 
-        } catch (IOException mIOException) { 
-            Log.e(TAG, mIOException.toString() + "  UnableToCreateDatabase"); 
-            throw new Error("UnableToCreateDatabase"); 
+        } catch (IOException e) { 
+        	Log.e(TAG, e.toString(), e);
+        	return null;
         }
         return this; 
     }
@@ -60,48 +62,31 @@ public class DataBaseAdapter {
     public void close() {
     	mDbHelper.close();
     }
-    
-	public ArrayList<User> getAllContacts() {
-		SQLiteDatabase db = mDbHelper.getReadableDatabase();
-		ArrayList<User> contactList = new ArrayList<User>();
-		String selectQuery = "SELECT "+ThreadHelper.DB_NAME+" FROM "+ThreadHelper.DB_TABLE;
-		try {
-			Cursor cursor = db.rawQuery(selectQuery, null);
-			if (cursor.moveToPosition(1)) { // set 1 cause 0 is myself
-				do {
-					contactList.add(new User(cursor.getString(0)));
-				} while (cursor.moveToNext());
-			}
-		} catch (NullPointerException e) { 
-			// No entry found
-		}
-		return contactList;
-	}
 	
-	public String getContactPassword() {
+	public String getPassword() {
 		SQLiteDatabase db = mDbHelper.getReadableDatabase();
-		Cursor cursor = db.query(ThreadHelper.DB_TABLE, new String[] { ThreadHelper.DB_PASSWORD },
+		Cursor cursor = db.query(ThreadHelper.DB_USER_TABLE, new String[] { ThreadHelper.DB_PASSWORD },
 				ThreadHelper.DB_ID + "=?", new String[] { "0" }, null, null, null, null);
 		if (cursor != null)
 			cursor.moveToFirst();
 		try {
 			return cursor.getString(0);
 		} catch (CursorIndexOutOfBoundsException e) {
-			Log.e(TAG, e.getMessage());
+			if (th.D) Log.d(TAG, e.getMessage());
 		}
 		return null;
 	}
 	
-	public String getContactName(int id) {
+	public String getName() {
 		SQLiteDatabase db = mDbHelper.getReadableDatabase();
-		Cursor cursor = db.query(ThreadHelper.DB_TABLE, new String[] { ThreadHelper.DB_NAME },
-				ThreadHelper.DB_ID + "=?", new String[] { String.valueOf(id) }, null, null, null, null);
+		Cursor cursor = db.query(ThreadHelper.DB_USER_TABLE, new String[] { ThreadHelper.DB_NAME },
+				ThreadHelper.DB_ID + "=?", new String[] { "0" }, null, null, null, null);
 		if (cursor != null)
 			cursor.moveToFirst();
 		try {
 			return cursor.getString(0);
 		} catch (CursorIndexOutOfBoundsException e) {
-			Log.e(TAG, e.getMessage());
+			if (th.D) Log.d(TAG, e.getMessage());
 		}
 		return null;
 	}
@@ -116,8 +101,46 @@ public class DataBaseAdapter {
 		values.put(ThreadHelper.DB_PRIVATE, contact.getPriv());
 		values.put(ThreadHelper.DB_PUBLIC, contact.getPub());
 
-		db.insert(ThreadHelper.DB_TABLE, null, values);
+		db.insert(ThreadHelper.DB_USER_TABLE, null, values);
 		db.close();
+	}
+	
+	public void addMessage(String jid, String message, Boolean me) {
+		SQLiteDatabase db = mDbHelper.getWritableDatabase();
+		ContentValues values = new ContentValues();
+		
+		values.put(ThreadHelper.DB_NAME, jid);
+		values.put(ThreadHelper.DB_MESSAGE, message);
+		values.put(ThreadHelper.DB_ME, String.valueOf(me));
+
+		db.insert(ThreadHelper.DB_HISTORY_TABLE, null, values);
+		db.close();
+	}
+	
+	public LinkedList<Discussion> getMessagesFrom(String jid) {
+		SQLiteDatabase db = mDbHelper.getReadableDatabase();
+		LinkedList<Discussion> list = new LinkedList<Discussion>();
+		String selectQuery = "SELECT "+ThreadHelper.DB_DATE+", "+
+							 ThreadHelper.DB_MESSAGE+", "+ThreadHelper.DB_ME+
+							 " FROM "+ThreadHelper.DB_HISTORY_TABLE+
+							 " WHERE "+ThreadHelper.DB_NAME+" LIKE '"+jid+"'";
+		
+		try {
+			Cursor cursor = db.rawQuery(selectQuery, null);
+			if (cursor.moveToPosition(0)) {
+				do {list.add(
+						new Discussion(
+							Timestamp.valueOf(cursor.getString(0)),
+							cursor.getString(1),
+							Boolean.valueOf(cursor.getString(2))
+						));
+				} while (cursor.moveToNext());
+			}
+		} catch (NullPointerException e) {
+			// no results found
+			return new LinkedList<Discussion>();
+		}
+		return list;
 	}
 	
 	public void update(Contact contact) {
@@ -129,90 +152,52 @@ public class DataBaseAdapter {
 		values.put(ThreadHelper.DB_PRIVATE, contact.getPriv());
 		values.put(ThreadHelper.DB_PUBLIC, contact.getPub());
 
-		db.update(ThreadHelper.DB_TABLE, values, ThreadHelper.DB_NAME + "=?",
+		db.update(ThreadHelper.DB_USER_TABLE, values, ThreadHelper.DB_NAME + "=?",
 				new String []{ contact.getName() });
 		db.close();
 	}
 	
-	public void deleteEntry(String jid) {
-		SQLiteDatabase db = mDbHelper.getWritableDatabase();
-		int result = db.delete(ThreadHelper.DB_TABLE,
-				ThreadHelper.DB_NAME + "=?", new String[] { jid });
-		if (th.D) Log.e(TAG, "Deleted user entry: "+result);
-		db.close();
-	}
-	
-	public boolean isset(String name) {
+	public boolean issetUser() {
 		SQLiteDatabase db = mDbHelper.getReadableDatabase();
 		try {
-			Cursor cursor = db.query(ThreadHelper.DB_TABLE, new String[] { ThreadHelper.DB_NAME },
-					ThreadHelper.DB_NAME + "=?", new String[] { name }, null, null, null, null);
+			Cursor cursor = db.query(ThreadHelper.DB_USER_TABLE, new String[] { ThreadHelper.DB_NAME },
+					ThreadHelper.DB_ID + "=?", new String[] { "0" }, null, null, null, null);
 			if (cursor != null)
 				cursor.moveToFirst();
 			cursor.getString(0);
 			return true;
 		} catch (CursorIndexOutOfBoundsException e) {
-			Log.e(TAG, e.getMessage());
+			if (th.D) Log.d(TAG, e.getMessage());
 		}
 		return false;
 	}
 	
-	public boolean isset(int id) {
-		SQLiteDatabase db = mDbHelper.getReadableDatabase();
-		try {
-			Cursor cursor = db.query(ThreadHelper.DB_TABLE, new String[] { ThreadHelper.DB_NAME },
-					ThreadHelper.DB_ID + "=?", new String[] { String.valueOf(id) }, null, null, null, null);
-			if (cursor != null)
-				cursor.moveToFirst();
-			cursor.getString(0);
-			return true;
-		} catch (CursorIndexOutOfBoundsException e) {
-			Log.e(TAG, e.getMessage());
-		}
-		return false;
-	}
-	
-	public String getPublicKey(String name) {
+	public String getPublicKey() {
 		String result = null;
 		SQLiteDatabase db = mDbHelper.getReadableDatabase();
-		Cursor cursor = db.query(ThreadHelper.DB_TABLE, new String[] { ThreadHelper.DB_PUBLIC },
-				ThreadHelper.DB_NAME + "=?", new String[] { name }, null, null, null, null);
+		Cursor cursor = db.query(ThreadHelper.DB_USER_TABLE, new String[] { ThreadHelper.DB_PUBLIC },
+				ThreadHelper.DB_ID + "=?", new String[] { "0" }, null, null, null, null);
 		try {
 			if (cursor != null)
 				cursor.moveToFirst();
 			result = cursor.getString(0);
 		} catch (CursorIndexOutOfBoundsException e) {
-			Log.e(TAG, e.getMessage());
+			if (th.D) Log.d(TAG, e.getMessage());
 		}
 		return result;
 	}
 	
-	public String getPublicKey(int id) {
+	public String getPrivateKey() {
 		String result = null;
 		SQLiteDatabase db = mDbHelper.getReadableDatabase();
-		Cursor cursor = db.query(ThreadHelper.DB_TABLE, new String[] { ThreadHelper.DB_PUBLIC },
-				ThreadHelper.DB_ID + "=?", new String[] { String.valueOf(id) }, null, null, null, null);
+		Cursor cursor = db.query(ThreadHelper.DB_USER_TABLE, new String[] { ThreadHelper.DB_PRIVATE },
+				ThreadHelper.DB_ID + "=?", new String[] { "0" }, null, null, null, null);
 		try {
 			if (cursor != null)
 				cursor.moveToFirst();
 			result = cursor.getString(0);
 		} catch (CursorIndexOutOfBoundsException e) {
-			Log.e(TAG, e.getMessage());
-		}
-		return result;
-	}
-	
-	public String getPrivateKey(int id) {
-		String result = null;
-		SQLiteDatabase db = mDbHelper.getReadableDatabase();
-		Cursor cursor = db.query(ThreadHelper.DB_TABLE, new String[] { ThreadHelper.DB_PRIVATE },
-				ThreadHelper.DB_ID + "=?", new String[] { String.valueOf(id) }, null, null, null, null);
-		try {
-			if (cursor != null)
-				cursor.moveToFirst();
-			result = cursor.getString(0);
-		} catch (CursorIndexOutOfBoundsException e) {
-			Log.e(TAG, e.getMessage());
+			if (th.D) Log.d(TAG, e.getMessage());
 		}
 		return result;
 	}

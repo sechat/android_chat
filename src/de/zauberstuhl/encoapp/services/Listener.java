@@ -105,19 +105,16 @@ public class Listener extends Service {
 	                    
 	                    if (th.D) Log.d(TAG, "Message received: "+msg);
 	                    DataBaseAdapter db = new DataBaseAdapter(getBaseContext());
-	            		msg = e.decrypt(db.getPrivateKey(0), msg);
+	            		msg = e.decrypt(db.getPrivateKey(), msg);
 	            		db.close();
 	                    
 	                    user = user.replaceAll("^(.*?)\\/.*$", "$1"); 
 						bundle.putString(ID, user);
 						bundle.putString(MESSAGE, msg);
 						
-						if (!ThreadHelper.isActivityVisible()) {
-							//Send a notification if the app is running in background
-							th.sendNotification(Listener.this,
-									mNotificationManager,
-									notifyDetails, user, msg);
-						}
+						th.sendNotification(Listener.this,
+								mNotificationManager,
+								notifyDetails, user, msg);
 	                }
 	            }
 	            response.setData(bundle);

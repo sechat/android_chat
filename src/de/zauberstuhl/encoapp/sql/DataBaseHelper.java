@@ -17,15 +17,22 @@ package de.zauberstuhl.encoapp.sql;
  */
 
 import java.io.IOException; 
+import de.zauberstuhl.encoapp.Contact;
 import de.zauberstuhl.encoapp.ThreadHelper;
- 
+import android.content.ContentValues;
 import android.content.Context; 
+import android.database.Cursor;
 import android.database.SQLException; 
 import android.database.sqlite.SQLiteDatabase; 
 import android.database.sqlite.SQLiteOpenHelper; 
+import android.util.Log;
  
 public class DataBaseHelper extends SQLiteOpenHelper { 
 
+	private static ThreadHelper th = new ThreadHelper();
+	
+	String TAG = this.getClass().getName();
+	
 	private Context context;
 	private SQLiteDatabase mDataBase;
  
@@ -65,17 +72,54 @@ public class DataBaseHelper extends SQLiteOpenHelper {
 
 	@Override
 	public void onCreate(SQLiteDatabase db) {
-    	db.execSQL("CREATE TABLE "+ThreadHelper.DB_TABLE+" ("+
+		// registered user
+    	db.execSQL("CREATE TABLE "+ThreadHelper.DB_USER_TABLE+" ("+
     			ThreadHelper.DB_ID+" INTEGER PRIMARY KEY, "+
     			ThreadHelper.DB_NAME+" TEXT, "+
     			ThreadHelper.DB_PASSWORD+" TEXT, "+
     			ThreadHelper.DB_PRIVATE+" TEXT, "+
     			ThreadHelper.DB_PUBLIC+" TEXT)");
+    	// message history
+    	db.execSQL("CREATE TABLE "+ThreadHelper.DB_HISTORY_TABLE+" ("+
+    			ThreadHelper.DB_NAME+" TEXT, "+
+    			ThreadHelper.DB_MESSAGE+" TEXT, "+
+    			ThreadHelper.DB_ME+" TEXT, "+
+    			ThreadHelper.DB_DATE+" TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
 	}
 
 	@Override
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-		db.execSQL("DROP TABLE IF EXISTS "+ThreadHelper.DB_TABLE);
+		if (th.D) Log.d(TAG, "++ onUpgrade ++");
+		Contact root = null;
+		String selectQuery = "SELECT " +
+			ThreadHelper.DB_NAME + ", " +
+			ThreadHelper.DB_PASSWORD +", " +
+			ThreadHelper.DB_PRIVATE + ", " +
+			ThreadHelper.DB_PUBLIC + " FROM " +
+			ThreadHelper.DB_USER_TABLE + " WHERE id = 0";
+		try {
+			Cursor cursor = db.rawQuery(selectQuery, null);
+			if (cursor.moveToPosition(0)) {
+				root = new Contact(0, cursor.getString(0),
+						cursor.getString(1), cursor.getString(2), cursor.getString(3));
+			}
+		} catch (NullPointerException e) {
+			// no results found
+			if (th.D) Log.d(TAG, "No data found in " + ThreadHelper.DB_USER_TABLE);
+		}
+		if (th.D) Log.d(TAG, "Delete old tables");
+		db.execSQL("DROP TABLE IF EXISTS " + ThreadHelper.DB_USER_TABLE);
+		db.execSQL("DROP TABLE IF EXISTS " + ThreadHelper.DB_HISTORY_TABLE);
+		if (th.D) Log.d(TAG, "Create new tables");
 		onCreate(db);
+		
+		if (th.D) Log.d(TAG, "Write backup to new database");
+		ContentValues values = new ContentValues();
+		values.put(ThreadHelper.DB_ID, root.getID());
+		values.put(ThreadHelper.DB_NAME, root.getName());
+		values.put(ThreadHelper.DB_PASSWORD, root.getPass());
+		values.put(ThreadHelper.DB_PRIVATE, root.getPriv());
+		values.put(ThreadHelper.DB_PUBLIC, root.getPub());
+		db.insert(ThreadHelper.DB_USER_TABLE, null, values);
 	}
 }
