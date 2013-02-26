@@ -76,7 +76,6 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.IBinder;
 import android.os.Messenger;
-import android.os.Vibrator;
 import android.util.Base64;
 import android.util.Log;
 import android.view.View;
@@ -194,6 +193,7 @@ public class ThreadHelper {
 	 */
 	public void sendNotification(Context context, NotificationManager mNotificationManager,
 			Notification notifyDetails, CharSequence contentTitle, CharSequence contentText) {
+		// notify only if the app is in background
 		if (!ThreadHelper.isActivityVisible()) {
 			Intent notify = new Intent(context, MessageBoard.class);
 			notify.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
@@ -205,6 +205,9 @@ public class ThreadHelper {
 					notify, android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
 			notifyDetails.setLatestEventInfo(context, contentTitle, contentText, intent);
 			notifyDetails.flags |= Notification.FLAG_AUTO_CANCEL;
+			// vibrate on new notification
+			notifyDetails.defaults |= Notification.DEFAULT_VIBRATE;
+			notifyDetails.vibrate = new long[]{100, 200, 100, 500};
 			// and turn on the status LED
 			notifyDetails.flags |= Notification.FLAG_SHOW_LIGHTS;
 			notifyDetails.ledARGB = Color.GREEN;
@@ -213,9 +216,6 @@ public class ThreadHelper {
 
 			mNotificationManager.notify(0, notifyDetails);
 		}
-		
-		Vibrator v = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
-		v.vibrate(new long[]{100, 200, 100, 500}, 1);
     }
 	
 	/**
