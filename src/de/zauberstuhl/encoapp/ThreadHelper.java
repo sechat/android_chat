@@ -84,14 +84,15 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 public class ThreadHelper {
-		
+	
+	String TAG = this.getClass().getName();
+	
 	public static XMPPConnection xmppConnection = null;
 	public static String ACCOUNT_NAME = null;
 	public static String ACCOUNT_PASSWORD = null;
 	
 	public final boolean D = true;
 	public final String appName = "3nc0App";
-	String TAG = getClass().getName();
 	public final String HOST = "connect.3nc0.de";
 	public final String IP = "188.40.178.248";
 	public final int PORT = 5222;
@@ -162,7 +163,7 @@ public class ThreadHelper {
 			ThreadHelper.xmppConnection.login(
 					ThreadHelper.ACCOUNT_NAME, ThreadHelper.ACCOUNT_PASSWORD);
 		} catch (XMPPException e) {
-			Log.e(TAG, e.getMessage(), e);
+			if (D) Log.d(TAG, e.getMessage(), e);
 			return false;
 		}
 		if (ThreadHelper.xmppConnection.isAuthenticated())
@@ -174,7 +175,7 @@ public class ThreadHelper {
 		try {
 			xmppConnect();
 		} catch (XMPPException e) {
-			Log.e(TAG, e.getMessage(), e);
+			if (D) Log.d(TAG, e.getMessage(), e);
 			return false;
 		}
 		if (xmppLogin(context))
@@ -382,17 +383,22 @@ public class ThreadHelper {
 		act.runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				Integer setTo;
+				// Update list and trigger notify on user adapter 
 				UserList.listItems.clear();
 				UserList.listItems.addAll(list);
 				UserList.adapter.notifyDataSetChanged();
+				
+				Integer setTo;
 				if (D) Log.d(TAG, "User-list notify data set changed!");
 				if (UserList.listItems.size() > 0)
 					setTo = View.GONE;
 				else setTo = View.VISIBLE;
+				// Display hint if the user has no contacts
 				UserList.contactInfoBox.setVisibility(setTo);
 				UserList.addAuto.setVisibility(setTo);
 				UserList.addManual.setVisibility(setTo);
+				// Remove update spinner
+				UserList.updateUserListBar.setVisibility(View.GONE);
 			}
 		});
 	}
