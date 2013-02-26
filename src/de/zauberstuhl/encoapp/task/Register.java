@@ -65,17 +65,20 @@ public class Register extends AsyncTask<Void, Integer, String> {
 			(TelephonyManager) act.getSystemService(Context.TELEPHONY_SERVICE);
 		PhoneNumberUtil phoneUtil = PhoneNumberUtil.getInstance();
 		
+		if (nickName.length() == 0)
+			return "Need Nickname for registration!";
+		
+		if (phoneNumber.length() == 0)
+			return "Please specify a phone number!";
+		
 		try {
 			PhoneNumber phoneNumber = phoneUtil.parse(
 					this.phoneNumber, manager.getSimCountryIso().toUpperCase(Locale.getDefault()));
 			identifier = manager.getSimCountryIso() + phoneNumber.getNationalNumber();
 		} catch (NumberParseException e) {
 			Log.e(TAG, e.getMessage(), e);
-			return "Please specify a correct phone number!";
+			return "It seams your phone number was not correct.";
 		}
-		
-		if (nickName.length() == 0)
-			return "Need Nickname for registration!";
 		
 		if (Encryption.privateKey == null && Encryption.publicKey == null)
 			encryption.generateKeyPair();
