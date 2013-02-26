@@ -66,7 +66,13 @@ public class Start extends Activity {
         
         startHint = (TextView) findViewById(R.id.start_hint);
         startProgress = (ProgressBar) findViewById(R.id.start_progress);
-        startProgress.setVisibility(View.VISIBLE);
+	}
+	
+	@Override
+	public synchronized void onResume() {
+		super.onResume();
+		if (th.D) Log.e(TAG, "++ onResume ++");
+		startProgress.setVisibility(View.VISIBLE);
 		startHint.setText(getString(R.string.loading_hint));
 		
         /**
@@ -78,7 +84,7 @@ public class Start extends Activity {
     	if (!serverAlive) {
     		startProgress.setVisibility(View.GONE);
     		startHint.setText(getString(R.string.no_network));
-    	} else new Thread(startup).start();// establish a connection
+    	} else new Thread(startup).start(); // establish a connection
 	}
 	
 	Handler handler = new Handler() {
