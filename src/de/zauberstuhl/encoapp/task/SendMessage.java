@@ -24,7 +24,6 @@ import org.jivesoftware.smackx.packet.VCard;
 
 import de.zauberstuhl.encoapp.Encryption;
 import de.zauberstuhl.encoapp.ThreadHelper;
-import de.zauberstuhl.encoapp.adapter.DataBaseAdapter;
 import android.app.Activity;
 import android.os.AsyncTask;
 import android.util.Log;
@@ -36,12 +35,10 @@ public class SendMessage extends AsyncTask<String, String, String> {
 	private static Encryption encryption = new Encryption();
 	
 	Activity act;
-	DataBaseAdapter db;
 	String TAG = getClass().getName();
 	
 	public SendMessage(Activity act) {
 		this.act = act;
-		this.db = new DataBaseAdapter(act);
 	}
 	
 	@Override
@@ -80,6 +77,5 @@ public class SendMessage extends AsyncTask<String, String, String> {
 	protected void onPostExecute(String result) {
 		if (result != null)
 			th.sendNotification(act, result, Toast.LENGTH_LONG);
-		db.close();
 	}
 }

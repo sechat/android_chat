@@ -16,8 +16,9 @@ package de.zauberstuhl.encoapp.activity;
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import java.util.LinkedHashMap;
+import java.util.LinkedList;
 
+import de.zauberstuhl.encoapp.Discussion;
 import de.zauberstuhl.encoapp.R;
 import de.zauberstuhl.encoapp.ThreadHelper;
 import de.zauberstuhl.encoapp.adapter.MessageAdapter;
@@ -39,7 +40,7 @@ public class MessageBoard extends Activity {
     public Button sendButton;
 	public EditText textField;
 	public static ListView msgBoard;
-	public static LinkedHashMap<String, String> listItems = new LinkedHashMap<String, String>();
+	public static LinkedList<Discussion> listItems = new LinkedList<Discussion>();
     public static MessageAdapter msgAdapter;
 	
     @Override
@@ -75,8 +76,11 @@ public class MessageBoard extends Activity {
         
         Bundle extras = getIntent().getExtras();
         if(extras != null) {
-        	if (extras.containsKey("activeChatUser"))
-        		th.setActiveChatUser(extras.getString("activeChatUser"));
+        	if (extras.containsKey("activeChatUser")) {
+        		String jid = extras.getString("activeChatUser");
+        		th.setActiveChatUser(jid);
+        		th.hasUserNewMessages(jid, false);
+        	}
         }
 	}
 	
