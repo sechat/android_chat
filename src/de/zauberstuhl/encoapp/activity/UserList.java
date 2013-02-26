@@ -18,9 +18,6 @@ package de.zauberstuhl.encoapp.activity;
 
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Iterator;
-import org.jivesoftware.smack.Roster;
-import org.jivesoftware.smack.RosterEntry;
 import org.jivesoftware.smack.filter.PacketFilter;
 import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smack.packet.Presence;
@@ -50,6 +47,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 public class UserList extends Activity {
@@ -65,11 +63,13 @@ public class UserList extends Activity {
 	public static TextView contactInfoBox;
 	public static Button addManual;
 	public static Button addAuto;
+	public static ProgressBar updateUserListBar;
 	
     Handler handler = new Handler();
 	Runnable updateUserList = new Runnable() {
 		@Override
 		public void run() {
+			updateUserListBar.setVisibility(View.VISIBLE);
 			th.updateUserList(UserList.this);
 			handler.postDelayed(this, ThreadHelper.USERLIST_REPEAT_TIME);
 		}
@@ -110,6 +110,7 @@ public class UserList extends Activity {
         contactInfoBox = (TextView)findViewById(R.id.noContactHint);
         addManual = (Button)findViewById(R.id.addContactManual);
         addAuto = (Button)findViewById(R.id.addContacts);
+        updateUserListBar = (ProgressBar)findViewById(R.id.updateUserListBar);
         
         /**
     	 * Start service listener
@@ -127,23 +128,14 @@ public class UserList extends Activity {
          */
         ListView myContacts = (ListView) findViewById(R.id.myContacts);
     	listItems = new ArrayList<User>();
-    	Roster roster = ThreadHelper.xmppConnection.getRoster();
-    	Iterator<RosterEntry> cit = roster.getEntries().iterator();
-    	while(cit.hasNext()) {
-    		RosterEntry entry = cit.next();
-    		listItems.add(new User(entry.getUser(),
-    				roster.getPresence(entry.getUser()).isAvailable()));
-    	}
     	
     	/**
     	 * Display a hint if the user has no contacts
     	 */
-    	if (listItems.size() == 0) {
-    		contactInfoBox.setVisibility(View.VISIBLE);
-    		addManual.setVisibility(View.VISIBLE);
-    		addAuto.setVisibility(View.VISIBLE);
-    	}
-    	
+    	contactInfoBox.setVisibility(View.VISIBLE);
+    	addManual.setVisibility(View.VISIBLE);
+    	addAuto.setVisibility(View.VISIBLE);
+    	    	
 		adapter = new UserAdapter(this, listItems);
 		myContacts.setAdapter(adapter);
 		

@@ -27,8 +27,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 
-import org.jivesoftware.smack.Chat;
-import org.jivesoftware.smack.ChatManager;
 import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.Roster;
 import org.jivesoftware.smack.RosterEntry;
@@ -86,14 +84,15 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 public class ThreadHelper {
-		
+	
+	String TAG = this.getClass().getName();
+	
 	public static XMPPConnection xmppConnection = null;
 	public static String ACCOUNT_NAME = null;
 	public static String ACCOUNT_PASSWORD = null;
 	
 	public final boolean D = true;
 	public final String appName = "3nc0App";
-	String TAG = getClass().getName();
 	public final String HOST = "connect.3nc0.de";
 	public final String IP = "188.40.178.248";
 	public final int PORT = 5222;
@@ -167,7 +166,7 @@ public class ThreadHelper {
 			ThreadHelper.xmppConnection.login(
 					ThreadHelper.ACCOUNT_NAME, ThreadHelper.ACCOUNT_PASSWORD);
 		} catch (XMPPException e) {
-			Log.e(TAG, e.getMessage(), e);
+			if (D) Log.d(TAG, e.getMessage(), e);
 			return false;
 		}
 		if (ThreadHelper.xmppConnection.isAuthenticated())
@@ -179,35 +178,11 @@ public class ThreadHelper {
 		try {
 			xmppConnect();
 		} catch (XMPPException e) {
-			Log.e(TAG, e.getMessage(), e);
+			if (D) Log.d(TAG, e.getMessage(), e);
 			return false;
 		}
 		if (xmppLogin(context))
 			return true;
-		return false;
-	}
-	
-	/**
-	 * Send your public key
-	 * to the user who request it
-	 */
-	public boolean sendPublicKey(DataBaseAdapter db, String user) {
-		/**
-		 * At the moment I have a view problems with smack.
-		 * If I get file transfer working I will handle that nicer!!!
-		 */
-		if (ThreadHelper.xmppConnection != null ||
-    			ThreadHelper.xmppConnection.isAuthenticated()) {
-    		String publicKey = db.getPublicKey(0);
-    		ChatManager chatmanager = ThreadHelper.xmppConnection.getChatManager();
-    		Chat newChat = chatmanager.createChat(user, null);
-    		try {
-    			newChat.sendMessage("((PUBLICKEY))"+publicKey);
-    			return true;
-    		} catch (XMPPException e) {
-    			if (D) Log.e(TAG, e.getMessage(), e);
-    		}
-    	}
 		return false;
 	}
 	
@@ -408,17 +383,22 @@ public class ThreadHelper {
 		act.runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				Integer setTo;
+				// Update list and trigger notify on user adapter 
 				UserList.listItems.clear();
 				UserList.listItems.addAll(list);
 				UserList.adapter.notifyDataSetChanged();
+				
+				Integer setTo;
 				if (D) Log.d(TAG, "User-list notify data set changed!");
 				if (UserList.listItems.size() > 0)
 					setTo = View.GONE;
 				else setTo = View.VISIBLE;
+				// Display hint if the user has no contacts
 				UserList.contactInfoBox.setVisibility(setTo);
 				UserList.addAuto.setVisibility(setTo);
 				UserList.addManual.setVisibility(setTo);
+				// Remove update spinner
+				UserList.updateUserListBar.setVisibility(View.GONE);
 			}
 		});
 	}

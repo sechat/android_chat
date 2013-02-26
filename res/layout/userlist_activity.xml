@@ -39,13 +39,23 @@
             android:visibility="gone" />
 
     </LinearLayout>
-        
-        <ListView
-            android:id="@+id/myContacts"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:clickable="true" >
-
-        </ListView>
     
+    <ListView
+        android:id="@+id/myContacts"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clickable="true" >
+        
+    </ListView>
+    
+    <ProgressBar
+        android:id="@+id/updateUserListBar"
+        style="?android:attr/progressBarStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginBottom="10dp"
+        android:layout_marginTop="10dp"
+        android:visibility="gone" />
+
 </LinearLayout>
