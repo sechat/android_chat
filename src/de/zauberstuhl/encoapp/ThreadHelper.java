@@ -105,7 +105,7 @@ public class ThreadHelper {
 	/**
 	 * Database params
 	 */
-	public final static int DATABASE_VERSION = 19;
+	public final static int DATABASE_VERSION = 17;
 	public final static String DATABASE = "3ncoApp";
 	// table
 	public final static String DB_USER_TABLE = "userTable";
