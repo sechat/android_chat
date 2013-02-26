@@ -46,7 +46,7 @@ public class Start extends Activity {
 		public void run() {
 			Message msg = new Message();
 			DataBaseAdapter db = new DataBaseAdapter(Start.this);
-			Boolean existUser = db.isset(0);
+			Boolean existUser = db.issetUser();
 			db.close();
 			
         	if (existUser) {

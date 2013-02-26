@@ -22,10 +22,9 @@ import java.io.ObjectOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
+import java.util.LinkedList;
 
 import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.Roster;
@@ -77,6 +76,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.IBinder;
 import android.os.Messenger;
+import android.os.Vibrator;
 import android.util.Base64;
 import android.util.Log;
 import android.view.View;
@@ -96,28 +96,26 @@ public class ThreadHelper {
 	public final String IP = "188.40.178.248";
 	public final int PORT = 5222;
 	
-	/**
-	 * To track the user messages
-	 * no nice but it works :S
-	 */
 	private static String activeChatUser = null;
 	private static String nickName = null;
 	private static boolean activityVisible;
 	
-	private static HashMap<String,LinkedHashMap<String, String>> userDiscussion =
-		new HashMap<String,LinkedHashMap<String, String>>();
-	
-	public final String USER_ID = "10";
-	public final String MY_ID = "11";
+	private static HashMap<String, Boolean> newMessages = new HashMap<String, Boolean>();
 	
 	/**
 	 * Database params
 	 */
-	public final static int DATABASE_VERSION = 16;
+	public final static int DATABASE_VERSION = 17;
 	public final static String DATABASE = "3ncoApp";
-	public final static String DB_TABLE = "userTable";
+	// table
+	public final static String DB_USER_TABLE = "userTable";
+	public final static String DB_HISTORY_TABLE = "userHistory";
+	// rows
 	public final static String DB_ID = "id";
 	public final static String DB_NAME = "name";
+	public final static String DB_ME = "me";
+	public final static String DB_MESSAGE = "message";
+	public final static String DB_DATE = "date";
 	public final static String DB_PASSWORD = "password";
 	public final static String DB_PRIVATE = "private";
 	public final static String DB_PUBLIC = "public";
@@ -137,7 +135,6 @@ public class ThreadHelper {
 	 * XMPP
 	 * @throws XMPPException 
 	 */
-	
 	public void xmppConnect() throws XMPPException {
 		if (!(ThreadHelper.xmppConnection == null) &&
 				ThreadHelper.xmppConnection.isConnected()) return;
@@ -157,8 +154,8 @@ public class ThreadHelper {
 			return true;
 		
 		DataBaseAdapter db = new DataBaseAdapter(context);
-		ThreadHelper.ACCOUNT_NAME = db.getContactName(0);
-		ThreadHelper.ACCOUNT_PASSWORD = db.getContactPassword();
+		ThreadHelper.ACCOUNT_NAME = db.getName();
+		ThreadHelper.ACCOUNT_PASSWORD = db.getPassword();
 		db.close();
 		
 		try {
@@ -196,63 +193,70 @@ public class ThreadHelper {
 	 * @return void
 	 */
 	public void sendNotification(Context context, NotificationManager mNotificationManager,
-			Notification notifyDetails, CharSequence contentTitle, CharSequence contentText) {	
-		Intent notify = new Intent(context, MessageBoard.class);
-		notify.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-		notify.putExtra("activeChatUser", contentTitle);
-		//notify.setAction(Intent.ACTION_MAIN);
-		//notify.addCategory(Intent.CATEGORY_LAUNCHER);
+			Notification notifyDetails, CharSequence contentTitle, CharSequence contentText) {
+		if (!ThreadHelper.isActivityVisible()) {
+			Intent notify = new Intent(context, MessageBoard.class);
+			notify.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+			notify.putExtra("activeChatUser", contentTitle);
+			//notify.setAction(Intent.ACTION_MAIN);
+			//notify.addCategory(Intent.CATEGORY_LAUNCHER);
 
-		PendingIntent intent = PendingIntent.getActivity(context, 0,
-				notify, android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
-		notifyDetails.setLatestEventInfo(context, contentTitle, contentText, intent);
-		notifyDetails.flags |= Notification.FLAG_AUTO_CANCEL;
-		// vibrate on new notification
-		notifyDetails.defaults |= Notification.DEFAULT_VIBRATE;
-		notifyDetails.vibrate = new long[]{100, 200, 100, 500};
-		// and turn on the status LED
-		notifyDetails.flags |= Notification.FLAG_SHOW_LIGHTS;
-		notifyDetails.ledARGB = Color.GREEN;
-		notifyDetails.ledOffMS = 300;
-		notifyDetails.ledOnMS = 300;
+			PendingIntent intent = PendingIntent.getActivity(context, 0,
+					notify, android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+			notifyDetails.setLatestEventInfo(context, contentTitle, contentText, intent);
+			notifyDetails.flags |= Notification.FLAG_AUTO_CANCEL;
+			// and turn on the status LED
+			notifyDetails.flags |= Notification.FLAG_SHOW_LIGHTS;
+			notifyDetails.ledARGB = Color.GREEN;
+			notifyDetails.ledOffMS = 300;
+			notifyDetails.ledOnMS = 300;
 
-		mNotificationManager.notify(0, notifyDetails);
+			mNotificationManager.notify(0, notifyDetails);
+		}
+		
+		Vibrator v = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+		v.vibrate(new long[]{100, 200, 100, 500}, 1);
     }
 	
 	/**
 	 * Add a new chat message to the active chat
 	 */
 	public void addDiscussionEntry(Activity act, String user, String message, Boolean me) {
-        Date date = new Date();
-        String hours = String.valueOf(date.getHours());
-        String minutes = String.valueOf(date.getMinutes());
-		LinkedHashMap<String, String> map = ThreadHelper.userDiscussion.get(user);
-		
-		if (map == null) map = new LinkedHashMap<String, String>();
-		String ident = String.valueOf(map.size());
-		if (me) ident = MY_ID + hours + minutes + ident;
-		else ident = USER_ID + hours + minutes + ident;
-		
-		map.put(ident, message);
-		ThreadHelper.userDiscussion.put(user, map);
-		if (D) Log.e(TAG, "Added new discussion entry to "+user);
+		if (D) Log.e(TAG, "Add new discussion entry to "+user);
+        DataBaseAdapter db = new DataBaseAdapter(act.getBaseContext());
+        db.addMessage(user, message, me);
+        db.close();
+		// update/refresh the message board
+        if (getActiveChatUser() == null) {
+        	hasUserNewMessages(user, true);
+        }
 		updateDiscussion(act);
 	}
 	
 	public void updateDiscussion(Activity act) {
 		if (getActiveChatUser() == null) return;
+		DataBaseAdapter db = new DataBaseAdapter(act.getBaseContext());
+        final LinkedList<Discussion> discussions = db.getMessagesFrom(getActiveChatUser());
+        db.close();
+        
 		act.runOnUiThread(new Runnable(){
 			@Override
 			public void run() {
-				LinkedHashMap<String, String> chatLog;
-				if (getUserDiscussion(getActiveChatUser()) == null)
-					chatLog = new LinkedHashMap<String, String>();
-				else chatLog = getUserDiscussion(getActiveChatUser());
 				MessageBoard.listItems.clear();
-				MessageBoard.listItems.putAll(chatLog);
+				MessageBoard.listItems.addAll(discussions);
 				MessageBoard.msgAdapter.notifyDataSetChanged();
 			}
 		});
+	}
+	
+	public boolean hasUserNewMessages(String jid) {
+		if (newMessages.containsKey(jid))
+			return newMessages.get(jid);
+		return false;
+	}
+	
+	public void hasUserNewMessages(String jid, Boolean result) {
+		newMessages.put(jid, result);
 	}
 	
 	public static boolean isActivityVisible() {
@@ -265,10 +269,6 @@ public class ThreadHelper {
 	
 	public static void activityPaused() {
 		activityVisible = false;
-	}
-	
-	public LinkedHashMap<String, String> getUserDiscussion(String user) {
-		return ThreadHelper.userDiscussion.get(user);
 	}
 	
 	public void setActiveChatUser(String input) {

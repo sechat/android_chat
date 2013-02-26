@@ -25,10 +25,6 @@ public class Contact {
 	String _priv;
 	String _pub;
 	
-	// Empty constructor
-	public Contact(){
-		
-	}
 	// constructor
 	public Contact(int id, String name, String password, String priv, String pub) {
 		this._id = id;

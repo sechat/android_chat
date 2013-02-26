@@ -20,32 +20,39 @@ public class User {
 	public String jid;
 	public String name = null;
 	public boolean online = false;
+	public boolean newMessage = false;
 	
-    public User() {
-        super();
-    }
    
     public User(String jid) {
-        super();
         this.jid = jid;
     }
     
     public User(String jid, String name) {
-        super();
         this.jid = jid;
         this.name = name;
     }
     
     public User(String jid, boolean online) {
-        super();
         this.jid = jid;
         this.online = online;
     }
     
+    public User(String jid, boolean online, boolean newMessage) {
+        this.jid = jid;
+        this.online = online;
+        this.newMessage = newMessage;
+    }
+    
     public User(String jid, String name, boolean online) {
-        super();
         this.jid = jid;
         this.name = name;
         this.online = online;
+    }
+    
+    public User(String jid, String name, boolean online, boolean newMessage) {
+        this.jid = jid;
+        this.name = name;
+        this.online = online;
+        this.newMessage = newMessage;
     }
 }

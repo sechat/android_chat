@@ -16,7 +16,10 @@ package de.zauberstuhl.encoapp.adapter;
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import java.util.LinkedHashMap;
+import java.sql.Timestamp;
+import java.util.LinkedList;
+
+import de.zauberstuhl.encoapp.Discussion;
 import de.zauberstuhl.encoapp.R;
 import de.zauberstuhl.encoapp.ThreadHelper;
 
@@ -36,10 +39,10 @@ public class MessageAdapter extends BaseAdapter {
 	private static ThreadHelper th = new ThreadHelper();
 
 	private Activity activity;
-    private LinkedHashMap<String, String> data;
+    private LinkedList<Discussion> data;
     private static LayoutInflater inflater = null;
     
-    public MessageAdapter(Activity activity, LinkedHashMap<String, String> data) {
+    public MessageAdapter(Activity activity, LinkedList<Discussion> data) {
     	this.activity = activity;
         this.data = data;
         inflater = (LayoutInflater)activity.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -61,14 +64,10 @@ public class MessageAdapter extends BaseAdapter {
 	}
 
     public View getView(int position, View convertView, ViewGroup parent) {
-        View vi=convertView;
-        String identifier = (String) data.keySet().toArray()[position];
-        String hours = identifier.substring(2, 4);
-        String minutes = identifier.substring(4, 6);
-        final String msg = (String) data.values().toArray()[position];
+        View vi = convertView;
+        final Discussion entry = data.get(position);
         
-        if (String.valueOf(identifier).startsWith(th.MY_ID))
-        	vi = inflater.inflate(R.layout.message_list_out, null);
+        if (entry.getMe()) vi = inflater.inflate(R.layout.message_list_out, null);
         else vi = inflater.inflate(R.layout.message_list_in, null);
         
         LinearLayout list = (LinearLayout)vi.findViewById(R.id.messageList);
@@ -80,13 +79,14 @@ public class MessageAdapter extends BaseAdapter {
 			public boolean onLongClick(View arg0) {
 				ClipboardManager cm = (ClipboardManager) activity
 					.getSystemService(Context.CLIPBOARD_SERVICE);
-		        cm.setText(msg);
+		        cm.setText(entry.getMessage());
 		        th.sendNotification(activity, "Copied to clipboard");
 				return true;
 			}
         });
-        message.setText(msg);
-        time.setText(hours+":"+minutes);
+        message.setText(entry.getMessage());
+        Timestamp timestamp = entry.getTimestamp();
+        time.setText(timestamp.getHours()+":"+timestamp.getMinutes());
         return vi;
     }
 }

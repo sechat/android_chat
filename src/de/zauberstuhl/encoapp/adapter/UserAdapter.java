@@ -91,6 +91,7 @@ public class UserAdapter extends BaseAdapter {
         RelativeLayout list = (RelativeLayout)vi.findViewById(R.id.userList);
         TextView text = (TextView)vi.findViewById(R.id.userTitle);
         ImageView status = (ImageView)vi.findViewById(R.id.userStatus);
+        final ImageView newMessage = (ImageView)vi.findViewById(R.id.newMessageView);
         TextView lastActivity = (TextView)vi.findViewById(R.id.lastActivity);
         
         final User user = data.get(position);
@@ -100,6 +101,7 @@ public class UserAdapter extends BaseAdapter {
     			String keyName = user.jid;
     			if (th.D) Log.e(TAG, "Switch to user chat: "+keyName);
     			th.setActiveChatUser(keyName);
+    			th.hasUserNewMessages(keyName, false);
     			// switch to the message board
     			Intent intent = new Intent(context, MessageBoard.class);
     			intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
@@ -144,6 +146,10 @@ public class UserAdapter extends BaseAdapter {
         	text.setText(user.name);
         else text.setText(user.jid);
         
+        if (th.hasUserNewMessages(user.jid))
+        	newMessage.setVisibility(View.VISIBLE);
+        else newMessage.setVisibility(View.GONE);
+        
         try {
 			LastActivity activty = LastActivityManager.getLastActivity(
 					ThreadHelper.xmppConnection, user.jid);
@@ -156,6 +162,7 @@ public class UserAdapter extends BaseAdapter {
 			lastActivity.setText("Idle since " + result);
 		} catch (XMPPException e) {
 			if (th.D) Log.e(TAG, e.getMessage());
+			lastActivity.setText("Idle not available, yet");
 		}
         return vi;
     }
