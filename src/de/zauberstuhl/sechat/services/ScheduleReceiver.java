@@ -1,4 +1,4 @@
-package de.zauberstuhl.encoapp.services;
+package de.zauberstuhl.sechat.services;
 
 /**
  * Copyright (C) 2013 Lukas Matt <lukas@zauberstuhl.de>
@@ -18,7 +18,7 @@ package de.zauberstuhl.encoapp.services;
 
 import java.util.Calendar;
 
-import de.zauberstuhl.encoapp.ThreadHelper;
+import de.zauberstuhl.sechat.ThreadHelper;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;

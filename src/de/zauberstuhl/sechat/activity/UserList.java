@@ -1,4 +1,4 @@
-package de.zauberstuhl.encoapp.activity;
+package de.zauberstuhl.sechat.activity;
 
 /**
  * Copyright (C) 2013 Lukas Matt <lukas@zauberstuhl.de>
@@ -22,15 +22,15 @@ import org.jivesoftware.smack.filter.PacketFilter;
 import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smack.packet.Presence;
 
-import de.zauberstuhl.encoapp.R;
-import de.zauberstuhl.encoapp.ThreadHelper;
-import de.zauberstuhl.encoapp.User;
-import de.zauberstuhl.encoapp.adapter.UserAdapter;
-import de.zauberstuhl.encoapp.services.Listener;
-import de.zauberstuhl.encoapp.services.ListenerHandler;
-import de.zauberstuhl.encoapp.services.SubscriptionHandler;
-import de.zauberstuhl.encoapp.task.AddManualContacts;
-import de.zauberstuhl.encoapp.task.SearchContacts;
+import de.zauberstuhl.sechat.R;
+import de.zauberstuhl.sechat.ThreadHelper;
+import de.zauberstuhl.sechat.User;
+import de.zauberstuhl.sechat.adapter.UserAdapter;
+import de.zauberstuhl.sechat.services.Listener;
+import de.zauberstuhl.sechat.services.ListenerHandler;
+import de.zauberstuhl.sechat.services.SubscriptionHandler;
+import de.zauberstuhl.sechat.task.AddManualContacts;
+import de.zauberstuhl.sechat.task.SearchContacts;
 import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.PendingIntent;

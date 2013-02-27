@@ -1,4 +1,4 @@
-package de.zauberstuhl.encoapp.adapter;
+package de.zauberstuhl.sechat.adapter;
 
 /**
  * Copyright (C) 2013 Lukas Matt <lukas@zauberstuhl.de>
@@ -24,10 +24,10 @@ import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smackx.LastActivityManager;
 import org.jivesoftware.smackx.packet.LastActivity;
 
-import de.zauberstuhl.encoapp.R;
-import de.zauberstuhl.encoapp.ThreadHelper;
-import de.zauberstuhl.encoapp.User;
-import de.zauberstuhl.encoapp.activity.MessageBoard;
+import de.zauberstuhl.sechat.R;
+import de.zauberstuhl.sechat.ThreadHelper;
+import de.zauberstuhl.sechat.User;
+import de.zauberstuhl.sechat.activity.MessageBoard;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;

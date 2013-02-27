@@ -1,4 +1,4 @@
-package de.zauberstuhl.encoapp.task;
+package de.zauberstuhl.sechat.task;
 
 /**
  * Copyright (C) 2013 Lukas Matt <lukas@zauberstuhl.de>

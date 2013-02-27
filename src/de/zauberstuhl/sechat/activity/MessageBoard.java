@@ -1,4 +1,4 @@
-package de.zauberstuhl.encoapp.activity;
+package de.zauberstuhl.sechat.activity;
 
 /**
  * Copyright (C) 2013 Lukas Matt <lukas@zauberstuhl.de>
@@ -18,11 +18,11 @@ package de.zauberstuhl.encoapp.activity;
 
 import java.util.LinkedList;
 
-import de.zauberstuhl.encoapp.Discussion;
-import de.zauberstuhl.encoapp.R;
-import de.zauberstuhl.encoapp.ThreadHelper;
-import de.zauberstuhl.encoapp.adapter.MessageAdapter;
-import de.zauberstuhl.encoapp.task.SendMessage;
+import de.zauberstuhl.sechat.Discussion;
+import de.zauberstuhl.sechat.R;
+import de.zauberstuhl.sechat.ThreadHelper;
+import de.zauberstuhl.sechat.adapter.MessageAdapter;
+import de.zauberstuhl.sechat.task.SendMessage;
 import android.app.Activity;
 import android.os.Bundle;
 import android.util.Log;

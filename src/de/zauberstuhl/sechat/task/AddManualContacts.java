@@ -1,4 +1,4 @@
-package de.zauberstuhl.encoapp.task;
+package de.zauberstuhl.sechat.task;
 
 /**
  * Copyright (C) 2013 Lukas Matt <lukas@zauberstuhl.de>
@@ -20,7 +20,7 @@ import java.util.Set;
 
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 
-import de.zauberstuhl.encoapp.R;
+import de.zauberstuhl.sechat.R;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.AlertDialog.Builder;

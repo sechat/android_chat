@@ -1,4 +1,4 @@
-package de.zauberstuhl.encoapp;
+package de.zauberstuhl.sechat;
 
 /**
  * Copyright (C) 2013 Lukas Matt <lukas@zauberstuhl.de>

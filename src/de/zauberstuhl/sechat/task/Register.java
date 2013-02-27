@@ -1,4 +1,4 @@
-package de.zauberstuhl.encoapp.task;
+package de.zauberstuhl.sechat.task;
 
 /**
  * Copyright (C) 2013 Lukas Matt <lukas@zauberstuhl.de>
@@ -28,12 +28,12 @@ import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
 
-import de.zauberstuhl.encoapp.Contact;
-import de.zauberstuhl.encoapp.Encryption;
-import de.zauberstuhl.encoapp.ThreadHelper;
-import de.zauberstuhl.encoapp.activity.Setup;
-import de.zauberstuhl.encoapp.activity.UserList;
-import de.zauberstuhl.encoapp.adapter.DataBaseAdapter;
+import de.zauberstuhl.sechat.Contact;
+import de.zauberstuhl.sechat.Encryption;
+import de.zauberstuhl.sechat.ThreadHelper;
+import de.zauberstuhl.sechat.activity.Setup;
+import de.zauberstuhl.sechat.activity.UserList;
+import de.zauberstuhl.sechat.adapter.DataBaseAdapter;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;

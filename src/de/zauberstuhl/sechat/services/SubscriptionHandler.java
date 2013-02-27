@@ -1,4 +1,4 @@
-package de.zauberstuhl.encoapp.services;
+package de.zauberstuhl.sechat.services;
 
 /**
  * Copyright (C) 2013 Lukas Matt <lukas@zauberstuhl.de>
@@ -24,7 +24,7 @@ import org.jivesoftware.smack.packet.Presence;
 import android.app.Activity;
 import android.util.Log;
 
-import de.zauberstuhl.encoapp.ThreadHelper;
+import de.zauberstuhl.sechat.ThreadHelper;
 
 public class SubscriptionHandler implements PacketListener {
 	

@@ -1,4 +1,4 @@
-package de.zauberstuhl.encoapp;
+package de.zauberstuhl.sechat;
 
 import java.sql.Timestamp;
 

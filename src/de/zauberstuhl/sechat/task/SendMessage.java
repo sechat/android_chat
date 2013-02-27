@@ -1,4 +1,4 @@
-package de.zauberstuhl.encoapp.task;
+package de.zauberstuhl.sechat.task;
 
 /**
  * Copyright (C) 2013 Lukas Matt <lukas@zauberstuhl.de>
@@ -22,8 +22,8 @@ import org.jivesoftware.smack.Roster;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smackx.packet.VCard;
 
-import de.zauberstuhl.encoapp.Encryption;
-import de.zauberstuhl.encoapp.ThreadHelper;
+import de.zauberstuhl.sechat.Encryption;
+import de.zauberstuhl.sechat.ThreadHelper;
 import android.app.Activity;
 import android.os.AsyncTask;
 import android.util.Log;

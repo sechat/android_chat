@@ -1,4 +1,4 @@
-package de.zauberstuhl.encoapp.services;
+package de.zauberstuhl.sechat.services;
 
 /**
  * Copyright (C) 2013 Lukas Matt <lukas@zauberstuhl.de>
@@ -22,10 +22,10 @@ import org.jivesoftware.smack.filter.PacketFilter;
 import org.jivesoftware.smack.filter.PacketTypeFilter;
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Packet;
-import de.zauberstuhl.encoapp.Encryption;
-import de.zauberstuhl.encoapp.R;
-import de.zauberstuhl.encoapp.ThreadHelper;
-import de.zauberstuhl.encoapp.adapter.DataBaseAdapter;
+import de.zauberstuhl.sechat.Encryption;
+import de.zauberstuhl.sechat.R;
+import de.zauberstuhl.sechat.ThreadHelper;
+import de.zauberstuhl.sechat.adapter.DataBaseAdapter;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.Service;

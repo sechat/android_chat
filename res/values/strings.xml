@@ -1,9 +1,9 @@
 <resources>
 
-    <string name="app_name">3ncoApp</string>
+    <string name="app_name">Se(s)cHat</string>
     <string name="hello_world">Hello world!</string>
     <string name="menu_settings">Settings</string>
-    <string name="title_activity_main">3ncoApp</string>
+    <string name="title_activity_main">Se(s)cHat</string>
     <string name="generate">Generate</string>
     <string name="no_network">You have no network connection! Please enable your WLAN or GSM.</string>
     <string name="adduser_hint">Add a new contact</string>

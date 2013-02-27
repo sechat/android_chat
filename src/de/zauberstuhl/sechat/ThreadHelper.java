@@ -1,4 +1,4 @@
-package de.zauberstuhl.encoapp;
+package de.zauberstuhl.sechat;
 
 /**
  * Copyright (C) 2013 Lukas Matt <lukas@zauberstuhl.de>
@@ -60,9 +60,9 @@ import org.jivesoftware.smackx.provider.VCardProvider;
 import org.jivesoftware.smackx.provider.XHTMLExtensionProvider;
 import org.jivesoftware.smackx.search.UserSearch;
 
-import de.zauberstuhl.encoapp.activity.MessageBoard;
-import de.zauberstuhl.encoapp.activity.UserList;
-import de.zauberstuhl.encoapp.adapter.DataBaseAdapter;
+import de.zauberstuhl.sechat.activity.MessageBoard;
+import de.zauberstuhl.sechat.activity.UserList;
+import de.zauberstuhl.sechat.adapter.DataBaseAdapter;
 import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationManager;

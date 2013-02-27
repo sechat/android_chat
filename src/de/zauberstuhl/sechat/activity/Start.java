@@ -1,4 +1,4 @@
-package de.zauberstuhl.encoapp.activity;
+package de.zauberstuhl.sechat.activity;
 
 /**
  * Copyright (C) 2013 Lukas Matt <lukas@zauberstuhl.de>
@@ -16,9 +16,9 @@ package de.zauberstuhl.encoapp.activity;
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import de.zauberstuhl.encoapp.R;
-import de.zauberstuhl.encoapp.ThreadHelper;
-import de.zauberstuhl.encoapp.adapter.DataBaseAdapter;
+import de.zauberstuhl.sechat.R;
+import de.zauberstuhl.sechat.ThreadHelper;
+import de.zauberstuhl.sechat.adapter.DataBaseAdapter;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;

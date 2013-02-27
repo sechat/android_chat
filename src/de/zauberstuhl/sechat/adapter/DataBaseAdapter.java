@@ -1,4 +1,4 @@
-package de.zauberstuhl.encoapp.adapter;
+package de.zauberstuhl.sechat.adapter;
 
 /**
  * Copyright (C) 2013 Lukas Matt <lukas@zauberstuhl.de>
@@ -20,10 +20,10 @@ import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.LinkedList;
 
-import de.zauberstuhl.encoapp.Contact;
-import de.zauberstuhl.encoapp.Discussion;
-import de.zauberstuhl.encoapp.ThreadHelper;
-import de.zauberstuhl.encoapp.sql.DataBaseHelper;
+import de.zauberstuhl.sechat.Contact;
+import de.zauberstuhl.sechat.Discussion;
+import de.zauberstuhl.sechat.ThreadHelper;
+import de.zauberstuhl.sechat.sql.DataBaseHelper;
 
 import android.content.ContentValues;
 import android.content.Context; 

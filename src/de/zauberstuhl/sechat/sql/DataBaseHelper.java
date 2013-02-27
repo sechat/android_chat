@@ -1,4 +1,4 @@
-package de.zauberstuhl.encoapp.sql;
+package de.zauberstuhl.sechat.sql;
 
 /**
  * Copyright (C) 2013 Lukas Matt <lukas@zauberstuhl.de>
@@ -17,8 +17,8 @@ package de.zauberstuhl.encoapp.sql;
  */
 
 import java.io.IOException; 
-import de.zauberstuhl.encoapp.Contact;
-import de.zauberstuhl.encoapp.ThreadHelper;
+import de.zauberstuhl.sechat.Contact;
+import de.zauberstuhl.sechat.ThreadHelper;
 import android.content.ContentValues;
 import android.content.Context; 
 import android.database.Cursor;
