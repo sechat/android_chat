@@ -1,19 +1,11 @@
-package de.zauberstuhl.sechat.adapter;
+package org.sechat.app.adapter;
 
 /**
- * Copyright (C) 2013 Lukas Matt <lukas@zauberstuhl.de>
- * 
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Copyright (c) 2014 Sechat GbR <support@sechat.org>
+ *
+ * You should have received a copy of the MIT License
+ * along with this program (license.txt).
+ * If not, see <http://sechat.github.io/license.txt>.
  */
 
 import java.util.ArrayList;
@@ -24,10 +16,10 @@ import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smackx.LastActivityManager;
 import org.jivesoftware.smackx.packet.LastActivity;
 
-import de.zauberstuhl.sechat.R;
-import de.zauberstuhl.sechat.ThreadHelper;
-import de.zauberstuhl.sechat.User;
-import de.zauberstuhl.sechat.activity.MessageBoard;
+import org.sechat.app.R;
+import org.sechat.app.ThreadHelper;
+import org.sechat.app.User;
+import org.sechat.app.activity.MessageBoard;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;

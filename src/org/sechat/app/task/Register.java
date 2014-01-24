@@ -1,19 +1,11 @@
-package de.zauberstuhl.sechat.task;
+package org.sechat.app.task;
 
 /**
- * Copyright (C) 2013 Lukas Matt <lukas@zauberstuhl.de>
- * 
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Copyright (c) 2014 Sechat GbR <support@sechat.org>
+ *
+ * You should have received a copy of the MIT License
+ * along with this program (license.txt).
+ * If not, see <http://sechat.github.io/license.txt>.
  */
 
 import java.util.HashMap;
@@ -28,12 +20,12 @@ import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
 
-import de.zauberstuhl.sechat.Contact;
-import de.zauberstuhl.sechat.Encryption;
-import de.zauberstuhl.sechat.ThreadHelper;
-import de.zauberstuhl.sechat.activity.Setup;
-import de.zauberstuhl.sechat.activity.UserList;
-import de.zauberstuhl.sechat.adapter.DataBaseAdapter;
+import org.sechat.app.Contact;
+import org.sechat.app.Encryption;
+import org.sechat.app.ThreadHelper;
+import org.sechat.app.activity.Setup;
+import org.sechat.app.activity.UserList;
+import org.sechat.app.adapter.DataBaseAdapter;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;

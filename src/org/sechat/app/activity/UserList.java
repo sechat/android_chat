@@ -1,19 +1,11 @@
-package de.zauberstuhl.sechat.activity;
+package org.sechat.app.activity;
 
 /**
- * Copyright (C) 2013 Lukas Matt <lukas@zauberstuhl.de>
- * 
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Copyright (c) 2014 Sechat GbR <support@sechat.org>
+ *
+ * You should have received a copy of the MIT License
+ * along with this program (license.txt).
+ * If not, see <http://sechat.github.io/license.txt>.
  */
 
 import java.util.ArrayList;
@@ -22,15 +14,15 @@ import org.jivesoftware.smack.filter.PacketFilter;
 import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smack.packet.Presence;
 
-import de.zauberstuhl.sechat.R;
-import de.zauberstuhl.sechat.ThreadHelper;
-import de.zauberstuhl.sechat.User;
-import de.zauberstuhl.sechat.adapter.UserAdapter;
-import de.zauberstuhl.sechat.services.Listener;
-import de.zauberstuhl.sechat.services.ListenerHandler;
-import de.zauberstuhl.sechat.services.SubscriptionHandler;
-import de.zauberstuhl.sechat.task.AddManualContacts;
-import de.zauberstuhl.sechat.task.SearchContacts;
+import org.sechat.app.R;
+import org.sechat.app.ThreadHelper;
+import org.sechat.app.User;
+import org.sechat.app.adapter.UserAdapter;
+import org.sechat.app.services.Listener;
+import org.sechat.app.services.ListenerHandler;
+import org.sechat.app.services.SubscriptionHandler;
+import org.sechat.app.task.AddManualContacts;
+import org.sechat.app.task.SearchContacts;
 import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
